@@ -1,0 +1,103 @@
+{
+  "_note": "教具圖表數據（P1 核實版，2026-11-16）。每組都附出處；示意數值不放在這裡。",
+  "subsidence_changhua_km2": {
+    "title": "彰化地區顯著下陷面積（年下陷超過 3 公分）",
+    "unit": "平方公里",
+    "threshold_cm_per_year": 3,
+    "years_roc": [90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114],
+    "values": [408.0, 357.3, 357.3, 368.1, 263.4, 278.3, 225.6, 213.7, 78.1, 138.9, 51.4, 80.0, 2.1, 1.5, 25.8, 1.4, 16.9, 9.1, 1.9, 0.9, 53.3, 2.0, 25.9, 0.0, 0.0],
+    "max_rate_114": { "cm_per_year": 2.9, "place": "溪州鄉" },
+    "source": "經濟部水利署〈114年度地層下陷檢測結果說明〉（115.03.16，經濟部地層下陷防治推動會第37次會議）p.3"
+  },
+  "subsidence_pingtung_km2": {
+    "title": "屏東地區顯著下陷面積（年下陷超過 3 公分）",
+    "unit": "平方公里",
+    "years_roc": [108, 109, 110, 111, 112, 113],
+    "values": [0.9, 0.9, 0.0, 68.5, 105.9, 0.0],
+    "note": "114 年度報告未列屏東。111、112 年面積又變大（原因未查到一手出處，教具不寫成因；可引用屏東縣政府 113.06.27：地下水位下降不少、沿海下陷速度明顯增加）。",
+    "source": "經濟部水利署〈114年度地層下陷檢測結果說明〉p.2"
+  },
+  "subsidence_region_114": {
+    "title": "114 年度各地區",
+    "rows": [
+      { "region": "彰化", "area_km2": 0.0, "max_rate_cm": 2.9 },
+      { "region": "雲林", "area_km2": 0.0, "max_rate_cm": 2.3 },
+      { "region": "嘉義", "area_km2": 0.0, "max_rate_cm": 2.0 },
+      { "region": "臺北", "area_km2": 0.0, "max_rate_cm": 1.4 }
+    ],
+    "source": "經濟部水利署〈114年度地層下陷檢測結果說明〉p.2"
+  },
+  "dachaozhou_recharge_fate": {
+    "title": "大潮州補注湖區每年補注的水去了哪裡（持續補注 5 年後）",
+    "unit": "萬立方公尺／年",
+    "total": 4657,
+    "parts": [
+      { "label": "第 1 含水層（淺層）", "value": 2780, "pct": 59.7 },
+      { "label": "第 2 含水層", "value": 112 },
+      { "label": "第 3-1 含水層", "value": 42 },
+      { "label": "第 3-2 含水層", "value": 19 },
+      { "label": "沿海邊界出流（頂住海水）", "value": 33 },
+      { "label": "經河川出滲回到河川", "value": 1671, "pct": 35.9, "split": { "林邊溪": 84, "東港溪": 16 } }
+    ],
+    "into_aquifers_pct": 63.4,
+    "source": "丁澈士等（2021）〈地下水人工補注與伏流水開發之回顧與前瞻〉，《土木水利》48(6) p.50"
+  },
+  "dachaozhou_phase1": {
+    "facilities": [
+      { "name": "調節池", "area_ha": 3 },
+      { "name": "第1沉澱池", "area_ha": 19 },
+      { "name": "第2沉澱池", "area_ha": 13 }
+    ],
+    "other": ["彎道取水工（臥箕堰、排砂門）", "固床工", "輸水箱涵", "監控中心與觀測井"],
+    "cost_billion_ntd": 14.13,
+    "design_max_intake_cms_full_plan": 116,
+    "design_infiltration_m_per_day": 10,
+    "intake_2018_to_2021_6_e8m3": 3.43,
+    "recharge_2018_to_2021_6_e8m3": 1.6659,
+    "annual_recharge_avg_e4m3": 4657,
+    "annual_recharge_recent_e4t": 5500,
+    "water_table_rise": { "fan_head_m_min": 3, "fan_middle_m": [0.1, 2], "reach_10cm_km": 22 },
+    "sources": ["《土木水利》48(6) p.49-50 圖4", "屏東縣政府新聞稿 113.06.27", "變更潮州都市計畫書 108.10 p.23"]
+  },
+  "dachaozhou_phase2_2024": {
+    "settling_pond_ha": 19.49,
+    "recharge_lakes": 3,
+    "recharge_lakes_ha": 42.76,
+    "added_recharge_e4t_per_year": 7400,
+    "source": "屏東縣政府新聞稿 113.06.27"
+  },
+  "niaozuitan": {
+    "supply_e4t_per_day": 25,
+    "split": { "彰化": 21, "草屯": 4 },
+    "groundwater_reduction_e4t_per_year": 6200,
+    "water_area_ha": 110,
+    "effective_storage_e4t": 1450,
+    "design": "四周截水牆、開挖至岩盤，讓水留在湖中",
+    "sources": ["水利署鳥嘴潭人工湖網站", "中興工程顧問公司專案頁", "公視新聞 435476"]
+  },
+  "yuanlinyuan": {
+    "area_ha": 2.53,
+    "top_ha": 1.72,
+    "bottom_ha": 1.3,
+    "detention_m3": 31490,
+    "peak_reduction_cms": 4.8,
+    "opened": "民國107年1月",
+    "cost_e8_ntd": 1.8,
+    "source": "變更員林都市計畫主要計畫書（108.01）第四章"
+  },
+  "scale_compare": {
+    "title": "量級對照",
+    "yuanlinyuan_detention_m3": 31490,
+    "dachaozhou_annual_recharge_m3": 46570000,
+    "ratio": 1479,
+    "note": "圓林園滿池一次的水量，約是大潮州一年補注量的 1/1,500"
+  },
+  "choushui_recharge_zone": {
+    "announced": "民國103年3月4日",
+    "area_km2": 194.8,
+    "share_of_groundwater_region_pct": 9.4,
+    "annual_recharge_e8t": 4.16,
+    "share_of_recharge_pct": 31.7,
+    "source": "黃智昭（2014）〈地下水補注地質敏感區〉，《地質》33(2)"
+  }
+}

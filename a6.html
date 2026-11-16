@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>A6 存款機和提款機｜地下水銀行 3D 探索</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script async src="https://cdn.jsdelivr.net/npm/es-module-shims@1.10.0/dist/es-module-shims.js"></script>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+<style>
+:root{
+  --glass: rgba(255,255,255,.72); --stroke: rgba(255,255,255,.78);
+  --ink:#0d2238; --ink2:#3a536d; --accent:#0369a1;
+  --shadow: 0 12px 40px rgba(12,42,80,.22), 0 2px 6px rgba(12,42,80,.10);
+  --radius: 20px;
+  --font: "Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:#b9cfe0;font-family:var(--font);color:var(--ink);-webkit-tap-highlight-color:transparent}
+#app{position:fixed;inset:0;overflow:hidden;user-select:none;-webkit-user-select:none}
+#app canvas{display:block;width:100%;height:100%;touch-action:none;outline:none}
+button{font-family:inherit;color:inherit;cursor:pointer;border:0;background:none}
+a{color:var(--accent)}
+.glass{background:var(--glass);-webkit-backdrop-filter:blur(18px) saturate(170%);backdrop-filter:blur(18px) saturate(170%);border:1px solid var(--stroke);box-shadow:var(--shadow);border-radius:var(--radius)}
+
+#titleCard{position:absolute;top:14px;left:14px;padding:10px 18px 10px 12px;display:flex;gap:12px;align-items:center;z-index:5;max-width:calc(100% - 28px)}
+#titleCard .logo{width:46px;height:46px;flex:none;border-radius:14px;display:grid;place-items:center;background:linear-gradient(145deg,#38bdf8,#0369a1);box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 4px 12px rgba(3,105,161,.35)}
+#titleCard h1{margin:0;font-size:21px;font-weight:900;letter-spacing:.04em;line-height:1.2}
+#titleCard p{margin:2px 0 0;font-size:13.5px;color:var(--ink2);font-weight:500}
+
+#cfg{position:absolute;top:134px;left:14px;width:262px;padding:14px 14px 12px;z-index:6;max-height:calc(100% - 218px);overflow:auto}
+#cfg h3,#res h3{margin:0 0 8px;font-size:17px;font-weight:900}
+.grp{margin-bottom:11px}
+.grp .lab{font-size:13.5px;font-weight:800;color:var(--ink2);margin-bottom:5px}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.opts.c3{grid-template-columns:1fr 1fr 1fr}
+.opt{padding:8px 6px;border-radius:12px;background:rgba(255,255,255,.66);font-size:14.5px;font-weight:800;line-height:1.2;text-align:center}
+.opt small{display:block;font-size:11px;font-weight:700;color:var(--ink2);margin-top:1px}
+.opt.on{background:var(--accent);color:#fff}.opt.on small{color:#e0f2fe}
+.opt.wide{grid-column:1/-1}
+.opt:disabled{opacity:.42;cursor:default}
+.opt.go{background:#16a34a;color:#fff}.opt.go small{color:#dcfce7}
+.opt.warn{background:#b45309;color:#fff}.opt.warn small{color:#ffedd5}
+.note{font-size:11.5px;color:#64748b;line-height:1.55;margin-top:6px}
+
+#res{position:absolute;top:96px;right:14px;width:286px;padding:14px 16px 12px;z-index:6;max-height:calc(100% - 180px);overflow:auto}
+.kv{display:flex;justify-content:space-between;align-items:baseline;font-size:14.5px;margin:6px 0 3px;font-weight:700;gap:8px}
+.kv b{font-size:16px;font-weight:900;white-space:nowrap}
+.kv small{font-size:11px;color:#64748b;font-weight:700}
+.months{display:grid;grid-template-columns:repeat(12,1fr);gap:2px;margin:4px 0 2px}
+.months i{height:20px;border-radius:4px;background:#e2e8f0;font-style:normal;font-size:10.5px;font-weight:800;display:grid;place-items:center;color:#64748b}
+.months i.wet{background:#bae6fd;color:#075985}
+.months i.now{outline:2.5px solid #0d2238;background:#fde68a;color:#0d2238}
+.bar{position:relative;height:12px;border-radius:6px;background:#e2e8f0;overflow:hidden;margin:3px 0 4px}
+.bar>div{height:100%;background:linear-gradient(90deg,#38bdf8,#0369a1);transition:width .25s}
+.bar.mud>div{background:linear-gradient(90deg,#a16207,#713f12)}
+.years{position:relative;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;height:92px;align-items:end;margin:8px 0 2px;padding-top:4px;border-bottom:2px solid #94a3b8}
+.years .y{position:relative;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center}
+.years .y div{width:100%;border-radius:6px 6px 0 0;background:linear-gradient(#38bdf8,#0369a1);transition:height .3s;min-height:0}
+.years .y.bad div{background:linear-gradient(#fbbf24,#b45309)}
+.years .y span{position:absolute;bottom:2px;font-size:12px;font-weight:900;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.5)}
+.years .goal{position:absolute;left:0;right:0;border-top:2px dashed #dc2626;pointer-events:none}
+.years .goal em{position:absolute;right:0;top:-15px;font-style:normal;font-size:10.5px;font-weight:800;color:#dc2626;background:rgba(255,255,255,.8);padding:0 3px;border-radius:3px}
+.ylab{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;font-size:11.5px;font-weight:800;color:var(--ink2);text-align:center}
+
+#rule{position:absolute;left:50%;bottom:78px;transform:translateX(-50%);width:min(700px,calc(100% - 28px));padding:10px 16px 10px 14px;z-index:6;font-size:15.5px;line-height:1.6;display:flex;gap:10px;align-items:flex-start}
+#rule .ico{flex:none;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:#0369a1;color:#fff}
+#rule.warn .ico{background:#dc2626;animation:pulse 1s infinite}
+#rule.good .ico{background:#16a34a}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(220,38,38,.6)}50%{box-shadow:0 0 0 10px rgba(220,38,38,0)}}
+
+#views{position:absolute;left:14px;bottom:14px;display:flex;gap:6px;padding:7px;z-index:5;max-width:calc(100% - 28px);overflow-x:auto;scrollbar-width:none}
+.vw{flex:none;display:flex;align-items:center;gap:7px;padding:8px 13px 8px 8px;border-radius:14px;font-size:15px;font-weight:700;transition:background .2s,transform .2s}
+.vw b{flex:none;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;color:#fff;font-size:14px;background:var(--c)}
+.vw:hover{background:rgba(255,255,255,.7)} .vw.active{background:#fff;transform:translateY(-2px)}
+
+#labels{position:absolute;inset:0;pointer-events:none;z-index:3;overflow:hidden}
+.lbl{position:absolute;left:0;top:0;white-space:nowrap;will-change:transform;transition:opacity .25s}
+.lbl.hide{opacity:0;pointer-events:none}
+.lbl.hide *{pointer-events:none!important}
+.pin{pointer-events:auto;display:flex;align-items:center;gap:6px;padding:4px 11px 4px 4px;border-radius:999px;font-size:14.5px;font-weight:900;background:rgba(255,255,255,.92);box-shadow:0 4px 14px rgba(0,30,60,.25);cursor:pointer;transform:translate(-50%,-100%)}
+.pin b{min-width:22px;height:22px;padding:0 5px;border-radius:11px;display:grid;place-items:center;color:#fff;font-size:12px;background:var(--c,#475569)}
+.geo{padding:3px 10px;border-radius:9px;font-size:14px;font-weight:800;color:#fff;background:rgba(13,34,56,.55);text-shadow:0 1px 2px rgba(0,0,0,.4);transform:translate(-50%,-50%)}
+.geo.water{background:rgba(3,105,161,.66)} .geo.canal{background:rgba(185,28,28,.66)}
+
+#panel{position:absolute;top:96px;right:14px;width:min(400px,calc(100% - 28px));max-height:calc(100% - 190px);overflow:auto;padding:18px 20px;z-index:8;transform:translateX(120%);transition:transform .45s cubic-bezier(.2,.8,.2,1)}
+#panel.open{transform:none}
+#panel h2{margin:0 0 4px;font-size:21px;font-weight:900}
+#panel .sub{font-size:13px;color:var(--ink2);margin-bottom:10px}
+#panel p,.modal p{font-size:15.5px;line-height:1.75;margin:8px 0}
+.x{position:absolute;top:10px;right:10px;width:34px;height:34px;border-radius:50%;font-size:20px;font-weight:900;color:var(--ink2)}
+.x:hover{background:rgba(255,255,255,.7)}
+.keys{display:grid;grid-template-columns:auto 1fr;gap:6px 10px;font-size:15px;margin-top:10px;line-height:1.6}
+.keys span:nth-child(odd){font-weight:900;color:#0c4a6e;white-space:nowrap}
+.src{font-size:12.5px;color:#64748b;line-height:1.6;margin-top:12px;border-top:1px solid rgba(100,116,139,.25);padding-top:8px}
+.box2{border-radius:14px;padding:10px 14px;margin:10px 0;font-size:15.5px;line-height:1.7}
+.box2.observe{background:rgba(14,165,233,.12)} .box2.think{background:rgba(245,158,11,.14)}
+.box2 b{display:block;margin-bottom:2px}
+.box2 details{margin-top:6px}.box2 summary{cursor:pointer;font-weight:800;color:#b45309}
+
+.modal{position:absolute;inset:0;z-index:12;display:none;place-items:center;background:rgba(13,34,56,.42)}
+.modal.open{display:grid}
+.modal .box{position:relative;width:min(720px,calc(100% - 24px));max-height:calc(100% - 24px);overflow:auto;padding:20px 22px 16px}
+.modal h2{margin:0 0 4px;font-size:23px;font-weight:900}
+.modal .sub{font-size:14.5px;color:var(--ink2);margin-bottom:8px}
+.stars{font-size:40px;letter-spacing:6px;color:#f59e0b;margin:4px 0}
+.stars i{font-style:normal;color:#94a3b8}
+.mrow{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:12px}
+.mrow .opt{padding:10px 16px;font-size:16px}
+.cond{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px}
+.cond .c{border-radius:16px;padding:14px 16px;background:#fff;border:2px solid #0369a1;box-shadow:0 6px 16px rgba(3,105,161,.18)}
+.cond .c.lock{border:2px dashed #94a3b8;background:rgba(255,255,255,.5);box-shadow:none;color:#64748b}
+.cond .c .n{display:inline-grid;place-items:center;width:30px;height:30px;border-radius:50%;background:#0369a1;color:#fff;font-weight:900;margin-right:6px}
+.cond .c.lock .n{background:#94a3b8}
+.cond .c h4{display:inline;font-size:18px;font-weight:900;margin:0}
+.cond .c p{font-size:14.5px;line-height:1.65;margin:8px 0 0}
+table.res{width:100%;border-collapse:collapse;font-size:15.5px;margin-top:6px}
+table.res td,table.res th{padding:6px 8px;border-bottom:1px solid rgba(100,116,139,.25);text-align:left}
+table.res td:nth-child(n+2),table.res th:nth-child(n+2){text-align:right}
+
+#credit{position:absolute;right:12px;bottom:14px;z-index:7;max-width:min(520px,calc(100% - 24px));padding:8px 12px;font-size:12.5px;line-height:1.6;color:var(--ink2);cursor:pointer;border-radius:14px}
+#credit b{font-size:13.5px;color:var(--ink);white-space:nowrap}
+#credit span{display:none}
+#credit.open span{display:block;margin-top:4px}
+#loading{position:fixed;inset:0;z-index:20;display:grid;place-items:center;background:linear-gradient(160deg,#dbe8f2,#b9cfe0);transition:opacity .6s}
+#loading div{font-size:17px;font-weight:700;color:var(--ink2)}
+#loading.done{opacity:0;pointer-events:none}
+.fold h3{display:flex;align-items:center;gap:8px;cursor:pointer;margin:0 0 8px}
+.fold h3::after{content:"";margin-left:auto;width:9px;height:9px;border-right:2.5px solid var(--ink2);border-bottom:2.5px solid var(--ink2);transform:rotate(45deg) translateY(-3px);transition:transform .2s}
+.fold h3 .mini{display:none;font-size:13px;font-weight:800;color:var(--accent)}
+.fold.closed{width:auto!important;max-width:calc(50% - 20px);padding:9px 14px}
+.fold.closed h3{margin:0}.fold.closed h3::after{transform:rotate(-45deg)}
+.fold.closed h3 .mini{display:inline}
+.fold.closed>*:not(h3){display:none!important}
+@media (max-width:1100px){#cfg{top:58px}#res{top:58px}#panel{top:58px}#titleCard{top:8px}}
+#views{max-width:calc(100% - 150px)}
+@media (max-width:820px){#cfg{width:226px}#res{width:252px}.opt{font-size:13.5px}#rule{font-size:14px}.cond{grid-template-columns:1fr}}
+@media (max-height:620px){#rule{padding:6px 12px;font-size:13.5px;line-height:1.45}#rule .ico{width:24px;height:24px}}
+/* ---- A1／A2／A6 示意剖面站追加 ---- */
+.bar.red>div{background:linear-gradient(90deg,#fb923c,#b91c1c)}
+.bar.green>div{background:linear-gradient(90deg,#4ade80,#15803d)}
+.kv b.alert{color:#b91c1c}
+.chart{margin:6px 0 0}.chart svg{display:block;width:100%;height:auto}
+.chart .cap{font-size:12px;font-weight:800;color:var(--ink2);margin-bottom:2px}
+table.mini{width:100%;border-collapse:collapse;font-size:13px;margin-top:4px}
+table.mini td,table.mini th{padding:4px 4px;border-bottom:1px solid rgba(100,116,139,.22);text-align:left;font-weight:700}
+table.mini th{font-size:11.5px;color:var(--ink2)}
+.exag{display:inline-block;margin-top:4px;padding:2px 8px;border-radius:8px;background:rgba(124,58,237,.12);color:#6d28d9;font-size:12px;font-weight:800}
+.grainCv{display:block;width:100%;height:auto;border-radius:14px;margin:8px 0 4px;background:#e2e8f0}
+.cond .c.new{box-shadow:0 0 0 4px #fde68a,0 6px 16px rgba(3,105,161,.18)}
+.cond .c .tag{display:inline-block;margin-left:6px;padding:1px 8px;border-radius:8px;background:#f59e0b;color:#fff;font-size:12px;font-weight:900;vertical-align:middle}
+.geo.salt{background:rgba(185,28,28,.72)} .geo.clay{background:rgba(120,72,30,.78)} .geo.exg{background:rgba(109,40,217,.7);font-size:12.5px}
+.geo.ref{background:rgba(255,255,255,.85);color:#0d2238;text-shadow:none}
+.spark{display:block;width:100%;height:56px;margin:4px 0 2px}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="labels"></div>
+
+<div id="titleCard" class="glass">
+  <div class="logo"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-5 9 5"/><path d="M5 10v8M9.5 10v8M14.5 10v8M19 10v8"/><path d="M3 21h18"/></svg></div>
+  <div><h1>A6 存款機和提款機</h1><p>人工湖把水存進地下，二峰圳把乾淨的伏流水領出來</p></div>
+</div>
+
+<div id="cfg" class="glass fold">
+  <h3>操作設定<span class="mini" id="cfgMini"></span></h3>
+  <div class="grp"><div class="lab">① 季節</div>
+    <div class="opts" id="seaOpts">
+      <button class="opt on" data-sea="wet">豐水期<small>溪水多</small></button>
+      <button class="opt" data-sea="dry">枯水期<small>溪水少</small></button>
+    </div></div>
+  <div class="grp"><div class="lab">② 存款機：人工湖</div>
+    <div class="opts">
+      <button class="opt" id="btnDepOn">打開引水<small id="depTip">豐水期才有水</small></button>
+      <button class="opt on" id="btnDepOff">關閉</button>
+    </div></div>
+  <div class="grp"><div class="lab">③ 提款機：二峰圳</div>
+    <div class="opts">
+      <button class="opt on" id="btnWdOn">打開取水<small>收集伏流水</small></button>
+      <button class="opt" id="btnWdOff">關閉</button>
+    </div></div>
+  <div class="grp"><div class="lab">④ 溪水</div>
+    <div class="opts" id="turbOpts">
+      <button class="opt on" data-m="0">清<small>平常</small></button>
+      <button class="opt" data-m="1">濁<small>大雨過後</small></button>
+    </div></div>
+  <div class="grp"><div class="lab">看地底</div>
+    <div class="opts"><button class="opt wide" id="btnXray">透視地面<small>看埋在河床下的集水廊道</small></button></div></div>
+  <div class="grp"><div class="lab">時間</div>
+    <div class="opts c3">
+      <button class="opt" id="btnPause">暫停</button>
+      <button class="opt on" data-sp="3">一般</button>
+      <button class="opt" data-sp="10">快轉</button>
+      <button class="opt wide" id="btnReset">↺ 重來</button>
+    </div></div>
+  <button class="opt wide go" id="btnCard" style="width:100%">本站重點・想一想</button>
+  <div class="note">大潮州人工湖和二峰圳是兩個不同的工程，在不同的地方；這裡放在同一個畫面比一比。存摺的數字、水位和水流都是示意。<br><span class="exag">示意圖：高度、深度誇大</span></div>
+</div>
+
+<div id="res" class="glass fold">
+  <h3>現在狀況<span class="mini" id="resMini"></span></h3>
+  <div class="kv"><span id="rDay">第 1 天</span><b id="rSea">豐水期</b></div>
+  <div class="kv"><span>今天存入 <small>示意</small></span><b id="rIn">–</b></div>
+  <div class="kv"><span>今天提出 <small>示意</small></span><b id="rOut">–</b></div>
+  <div class="kv"><span>地下水存摺餘額 <small>示意</small></span><b id="rBal">–</b></div>
+  <div class="bar green"><div id="bBal"></div></div>
+  <canvas class="spark" id="spark" width="508" height="112"></canvas>
+  <div class="kv"><span>存摺狀態</span><b id="rState">–</b></div>
+  <div class="kv"><span>溪水</span><b id="rRiver">–</b></div>
+  <div class="kv"><span>二峰圳流出的水</span><b id="rGal">–</b></div>
+  <div class="note">存入＝雨水、溪水滲進地底＋人工湖；提出＝二峰圳取水＋地下水自然流走。單位「萬立方公尺」，都是示意。<br>對照：二峰圳完工時的出水量，豐水期每天約 25 萬、枯水期每天約 7.5 萬立方公尺；現在大約是 15 萬和 6 萬。</div>
+</div>
+
+<div id="rule" class="glass"><div class="ico"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10 21h4"/></svg></div><div id="ruleTxt"></div></div>
+
+<div id="views" class="glass">
+  <button class="vw" data-v="overview" style="--c:#0284c7"><b>1</b>全景</button>
+  <button class="vw" data-v="section" style="--c:#7c3aed"><b>2</b>地底剖面</button>
+  <button class="vw" data-v="dep" style="--c:#16a34a"><b>3</b>存款機</button>
+  <button class="vw" data-v="wd" style="--c:#b45309"><b>4</b>提款機</button>
+  <button class="vw" data-v="down" style="--c:#475569"><b>5</b>下游農田</button>
+</div>
+
+<aside id="panel" class="glass">
+  <button class="x" aria-label="關閉">×</button>
+  <h2 id="pTitle"></h2><div class="sub" id="pSub"></div><div id="pBody"></div>
+</aside>
+
+<div id="credit" class="glass"><b>ⓘ 資料來源</b><span>二峰圳：丁澈士等（2021）《土木水利》48(6) 表 1｜建功伏流水、大潮州人工湖：屏東縣政府新聞稿（113.06.27）、《土木水利》48(6)｜材質與天空：Poly Haven（CC0）｜剖面、地形、存摺數字、水位和水流都是教學示意</span></div>
+<div id="loading"><div>正在準備存款機和提款機…</div></div>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
+/* ---------- 共用小工具（A1／A2／A6 示意剖面站相同） ---------- */
+const TEX = 'assets/tex/';
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const lerp = (a, b, t) => a + (b - a) * t;
+const smooth = (a, b, v) => { const t = clamp((v - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
+function rng(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+const fmt = n => Math.round(n).toLocaleString('en-US');
+const $ = id => document.getElementById(id);
+const FONT = '"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif';
+
+let renderer, scene, camera, controls, waterN;
+const clock = new THREE.Clock(), U = { time: 0 }, labels = [];
+const texLoader = new THREE.TextureLoader();
+const loadTex = (url, srgb = false, rep = true) => new Promise((res, rej) => texLoader.load(url, t => {
+  if (srgb) t.colorSpace = THREE.SRGBColorSpace;
+  if (rep) t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.anisotropy = 8; res(t);
+}, undefined, rej));
+
+function setupRenderer(o) {
+  renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  renderer.setSize(innerWidth, innerHeight);
+  renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 0.9;
+  $('app').appendChild(renderer.domElement);
+  scene = new THREE.Scene();
+  scene.fog = new THREE.Fog(0xd3d9db, o.fog[0], o.fog[1]);
+  camera = new THREE.PerspectiveCamera(45, innerWidth / innerHeight, 1, o.far || 6000);
+  controls = new OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true; controls.dampingFactor = 0.08;
+  controls.maxPolarAngle = Math.PI * 0.53; controls.minDistance = o.minD; controls.maxDistance = o.maxD;
+  controls.screenSpacePanning = false;
+  const sun = new THREE.DirectionalLight(0xfff1dd, 2.3); sun.position.set(-0.35, 0.8, 0.55).multiplyScalar(500);
+  scene.add(sun, new THREE.HemisphereLight(0xcfe3ff, 0x6b5a3e, 0.6));
+  addEventListener('resize', () => { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); });
+}
+function loadSky() {
+  return new RGBELoader().loadAsync('assets/hdri/sky_1k.hdr').then(hdr => {
+    hdr.mapping = THREE.EquirectangularReflectionMapping;
+    scene.background = new THREE.Color(0xd5e4ef);
+    const pm = new THREE.PMREMGenerator(renderer); scene.environment = pm.fromEquirectangular(hdr).texture; pm.dispose();
+  });
+}
+
+/* 地表材質：材質貼圖提供細節，頂點屬性 aC（rgb＝底色、a＝貼圖原色的比例）決定顏色 */
+function blendMat(tex, opts = {}) {
+  const m = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.95, metalness: 0, ...opts });
+  m.onBeforeCompile = sh => {
+    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nattribute vec4 aC; varying vec4 vC;')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvC = aC;');
+    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying vec4 vC;')
+      .replace('#include <map_fragment>', `#include <map_fragment>
+      float lum = dot(diffuseColor.rgb, vec3(.299,.587,.114));
+      diffuseColor.rgb = mix(vC.rgb * (0.6 + 0.9 * lum), diffuseColor.rgb, vC.a);`);
+  };
+  return m;
+}
+/* 規則網格地表：pos(i,j) → [x,z]；col(x,z) → [r,g,b,a]（sRGB 0–1） */
+function makeGrid(NX, NZ, pos, col, mat, uvScale = 8) {
+  const n = NX * NZ, P = new Float32Array(n * 3), UV = new Float32Array(n * 2), C = new Float32Array(n * 4), XZ = new Float32Array(n * 2);
+  const c = new THREE.Color();
+  for (let j = 0; j < NZ; j++) for (let i = 0; i < NX; i++) {
+    const k = j * NX + i, [x, z] = pos(i, j), cc = col(x, z);
+    XZ[k * 2] = x; XZ[k * 2 + 1] = z; P[k * 3] = x; P[k * 3 + 2] = z; UV[k * 2] = x / uvScale; UV[k * 2 + 1] = z / uvScale;
+    c.setRGB(cc[0], cc[1], cc[2], THREE.SRGBColorSpace); C.set([c.r, c.g, c.b, cc[3]], k * 4);
+  }
+  const idx = new Uint32Array((NX - 1) * (NZ - 1) * 6); let p = 0;
+  for (let j = 0; j < NZ - 1; j++) for (let i = 0; i < NX - 1; i++) { const a = j * NX + i, b = a + 1, cI = a + NX, d = cI + 1; idx[p++] = a; idx[p++] = cI; idx[p++] = b; idx[p++] = b; idx[p++] = cI; idx[p++] = d; }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(P, 3)); g.setAttribute('uv', new THREE.BufferAttribute(UV, 2)); g.setAttribute('aC', new THREE.BufferAttribute(C, 4));
+  g.setIndex(new THREE.BufferAttribute(idx, 1));
+  const mesh = new THREE.Mesh(g, mat); scene.add(mesh);
+  return { mesh, XZ, n, setY(f) { for (let k = 0; k < n; k++) P[k * 3 + 1] = f(XZ[k * 2], XZ[k * 2 + 1], k); g.attributes.position.needsUpdate = true; g.computeVertexNormals(); g.computeBoundingSphere(); } };
+}
+/* 剖面（切面）：沿 P(t) → [x,z,u] 的一條帶子，上緣跟著地表走；v 依高度 Y0–Y1 對應到畫布 */
+function makeFace(N, P, map) {
+  const pos = new Float32Array((N + 1) * 6), uv = new Float32Array((N + 1) * 4), idx = [];
+  for (let i = 0; i < N; i++) { const a = i * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.BufferAttribute(uv, 2)); g.setIndex(idx);
+  const mesh = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ map, side: THREE.DoubleSide, toneMapped: false })); scene.add(mesh);
+  return { mesh, update(top, yb, Y0, Y1) {
+    for (let i = 0; i <= N; i++) { const [x, z, u] = P(i / N), yt = top(x, z); pos.set([x, yt, z, x, yb, z], i * 6); uv.set([u, (yt - Y0) / (Y1 - Y0), u, (yb - Y0) / (Y1 - Y0)], i * 4); }
+    g.attributes.position.needsUpdate = true; g.attributes.uv.needsUpdate = true; g.computeBoundingSphere();
+  } };
+}
+function canvasTex(w, h) {
+  const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+  const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 8;
+  return { cv, ctx: cv.getContext('2d'), tex };
+}
+/* 地層花紋（畫一次，當 pattern 用） */
+function makePattern(kind, base, seed = 1) {
+  const c = document.createElement('canvas'); c.width = c.height = 96; const x = c.getContext('2d'), r = rng(seed);
+  x.fillStyle = base; x.fillRect(0, 0, 96, 96);
+  if (kind === 'gravel') for (let i = 0; i < 46; i++) { const s = 3 + r() * r() * 11, g = 105 + r() * 90 | 0; x.fillStyle = `rgb(${g},${g - 8},${g - 20})`; x.beginPath(); x.ellipse(r() * 96, r() * 96, s, s * (0.6 + r() * 0.3), r() * 3, 0, 6.3); x.fill(); x.strokeStyle = 'rgba(30,24,18,.45)'; x.lineWidth = 1; x.stroke(); }
+  if (kind === 'sand') for (let i = 0; i < 260; i++) { x.fillStyle = r() < 0.5 ? 'rgba(255,255,255,.35)' : 'rgba(60,40,10,.28)'; x.fillRect(r() * 96, r() * 96, 2, 2); }
+  if (kind === 'clay') { x.strokeStyle = 'rgba(40,25,15,.32)'; x.lineWidth = 1.6; for (let i = 0; i < 26; i++) { const yy = r() * 96, xx = r() * 96; x.beginPath(); x.moveTo(xx, yy); x.lineTo(xx + 10 + r() * 16, yy); x.stroke(); } }
+  if (kind === 'soil') for (let i = 0; i < 160; i++) { x.fillStyle = r() < 0.5 ? 'rgba(255,255,255,.18)' : 'rgba(30,20,5,.25)'; x.fillRect(r() * 96, r() * 96, 3, 2); }
+  if (kind === 'rock') { x.strokeStyle = 'rgba(20,20,30,.35)'; x.lineWidth = 2; for (let i = 0; i < 9; i++) { const yy = r() * 96; x.beginPath(); x.moveTo(0, yy); x.lineTo(96, yy + (r() - 0.5) * 30); x.stroke(); } }
+  return c;
+}
+/* 沿 x 方向畫「從 yTop(x) 往下塗滿」的多邊形（畫家演算法：上層先畫、下層後畫蓋上去） */
+function fillBelow(x, W, H, fn, style, step = 6) {
+  x.fillStyle = style; x.beginPath(); x.moveTo(0, H + 2);
+  for (let px = 0; px <= W + step; px += step) x.lineTo(px, fn(Math.min(px, W)));
+  x.lineTo(W + step, H + 2); x.closePath(); x.fill();
+}
+function fillBetween(x, W, topFn, botFn, style, p0 = 0, p1 = W, step = 6) {
+  if (p1 <= p0) return;
+  x.fillStyle = style; x.beginPath();
+  for (let px = p0; px <= p1 + 0.01; px += step) x.lineTo(px, topFn(Math.min(px, p1)));
+  x.lineTo(p1, topFn(p1));
+  for (let px = p1; px >= p0 - 0.01; px -= step) x.lineTo(Math.max(px, p0), botFn(Math.max(px, p0)));
+  x.closePath(); x.fill();
+}
+function arrowTex(color) {
+  const c = document.createElement('canvas'); c.width = 128; c.height = 64; const x = c.getContext('2d');
+  x.strokeStyle = color; x.lineWidth = 12; x.lineCap = 'round'; x.lineJoin = 'round';
+  x.beginPath(); x.moveTo(40, 12); x.lineTo(84, 32); x.lineTo(40, 52); x.stroke();
+  const t = new THREE.CanvasTexture(c); t.wrapS = THREE.RepeatWrapping; t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+/* 地面陰影（讓懸空的剖面塊有落地感） */
+function blobShadow(w, d, y) {
+  const c = document.createElement('canvas'); c.width = c.height = 128; const x = c.getContext('2d');
+  const g = x.createRadialGradient(64, 64, 8, 64, 64, 64); g.addColorStop(0, 'rgba(20,40,60,.38)'); g.addColorStop(1, 'rgba(20,40,60,0)');
+  x.fillStyle = g; x.fillRect(0, 0, 128, 128);
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(w, d), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c), transparent: true, depthWrite: false }));
+  m.rotation.x = -Math.PI / 2; m.position.y = y; scene.add(m); return m;
+}
+
+/* ---------- 標籤（每一幀投影到螢幕上） ---------- */
+function addLabel(html, cls, pos, o = {}) {
+  const div = document.createElement('div'); div.className = 'lbl'; div.innerHTML = `<div class="${cls}">${html}</div>`;
+  if (o.color) div.firstChild.style.setProperty('--c', o.color);
+  if (o.click) div.firstChild.addEventListener('click', o.click);
+  $('labels').appendChild(div);
+  const L = { el: div, pos, max: o.max || 1e9, show: o.show, nrm: o.nrm }; labels.push(L); return L;
+}
+const _v = new THREE.Vector3(), _w = new THREE.Vector3();
+function updateLabels() {
+  const w = innerWidth, h = innerHeight;
+  for (const L of labels) {
+    let ok = L.show === undefined || (typeof L.show === 'function' ? L.show() : L.show);
+    if (ok && L.nrm) ok = _w.copy(camera.position).sub(L.pos).dot(L.nrm) > 0;   // 切面上的標籤：從背面看就藏起來
+    if (ok) { _v.copy(L.pos).project(camera); ok = _v.z < 1 && Math.abs(_v.x) < 1.1 && Math.abs(_v.y) < 1.1 && camera.position.distanceTo(L.pos) < L.max; }
+    L.el.classList.toggle('hide', !ok);
+    if (ok) L.el.style.transform = `translate(${(_v.x * .5 + .5) * w}px,${(-_v.y * .5 + .5) * h}px)`;
+  }
+}
+
+/* ---------- 提示列、說明卡、視角 ---------- */
+let lastSay = '', sayT = -99; const SAYQ = [];
+/* 自動提示排隊：每則至少停留 5 秒，學生才讀得完 */
+function sayAuto(k) { if (U.time - sayT < 5) { if (!SAYQ.includes(k)) SAYQ.push(k); } else say(k); }
+function drainSay() { if (SAYQ.length && U.time - sayT >= 5) say(SAYQ.shift()); }
+function say(k) { if (!MSG[k]) return; lastSay = k; sayT = U.time; const [type, html] = MSG[k], el = $('rule'); el.className = 'glass ' + (type === 'info' ? '' : type); $('ruleTxt').innerHTML = html; }
+function openPanel(key) {
+  const d = INFO[key]; if (!d) return; $('pTitle').textContent = d.t; $('pSub').textContent = d.s;
+  $('pBody').innerHTML = d.b; const p = $('panel'); p.classList.add('open'); p.scrollTop = 0;
+  if (d.after) d.after($('pBody'));
+}
+function flyTo(v, dur = 1.6) {
+  document.querySelectorAll('.vw').forEach(b => b.classList.toggle('active', b.dataset.v === v));
+  const d = VIEWS[v]; if (!d) return;
+  const t = new THREE.Vector3(...d.t), p = new THREE.Vector3(...d.p);
+  gsap.killTweensOf(camera.position); gsap.killTweensOf(controls.target);
+  if (!dur) { camera.position.copy(p); controls.target.copy(t); controls.update(); return; }
+  gsap.to(camera.position, { x: p.x, y: p.y, z: p.z, duration: dur, ease: 'power2.inOut' });
+  gsap.to(controls.target, { x: t.x, y: t.y, z: t.z, duration: dur, ease: 'power2.inOut', onUpdate: () => controls.update() });
+}
+function setupCommonUI(onView) {
+  const cfg = $('cfg'), res = $('res');
+  const fold = () => { const w = innerWidth; cfg.classList.toggle('closed', w < 760); res.classList.toggle('closed', w < 1000); };
+  fold(); let lastW = innerWidth; addEventListener('resize', () => { if (Math.abs(innerWidth - lastW) > 80) { lastW = innerWidth; fold(); } });
+  for (const [a, b] of [[cfg, res], [res, cfg]]) a.querySelector('h3').addEventListener('click', () => { a.classList.toggle('closed'); if (!a.classList.contains('closed') && innerWidth < 1000) b.classList.add('closed'); });
+  document.querySelectorAll('.vw').forEach(b => b.addEventListener('click', () => onView(b.dataset.v)));
+  document.querySelector('#panel .x').addEventListener('click', () => $('panel').classList.remove('open'));
+  document.querySelectorAll('.modal').forEach(m => { m.querySelector('.x').addEventListener('click', () => m.classList.remove('open')); m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); }); });
+  $('credit').addEventListener('click', () => $('credit').classList.toggle('open'));
+}
+function doneLoading() { const ld = $('loading'); ld.classList.add('done'); setTimeout(() => ld.remove(), 700); }
+function onBtns(sel, fn) { document.querySelectorAll(sel).forEach(b => b.addEventListener('click', () => fn(b))); }
+function markOn(sel, test) { document.querySelectorAll(sel).forEach(b => b.classList.toggle('on', !!test(b))); }
+
+/* =====================================================================
+   A6 存款機和提款機（示意剖面）
+   左：人工湖（存款機，地面水滲進地下）；右：二峰圳式地下集水廊道（提款機，取河床下的伏流水）
+   兩個工程實際上在不同地方，這裡並排是為了比較。x 向右、z 向前（＋＝前方切面）、y 向上；高度誇大
+   數字（存摺、水位）全部是示意；真實數字只在說明卡（依 事實核實表_v3.md）
+   ===================================================================== */
+const X0 = -110, X1 = 110, Z0 = -50, Z1 = 50, YB = -36, YT = 16;
+const BX0 = -20, BX1 = 50, RXC = 15, PX0 = -94, PX1 = -40, PZ0 = -34, GX0 = -16, GX1 = 50, GZ = 47.5;
+const SIM = { NAT: [5, 0.6], POND: 5, GAL: [4, 1.2], OUT0: 1.2, OUTK: 0.003, BMAX: 600 };   // 萬立方公尺／日（示意）
+const ST = { day: 0, speed: 3, paused: false, wet: true, dep: false, wd: true, mud: 0, xray: false, L: 0, M: 0, B: 300, G: 1, inT: 0, outT: 0, gal: 0, def: 0, film: 0, hist: [], warned: false, riverK: 1 };
+const OBJ = {};
+
+/* ---------- 地形（示意） ---------- */
+const bars = (x, z) => 0.45 * Math.sin(x * 0.25 + z * 0.06) * Math.sin(z * 0.05 + x * 0.1);
+const inPond = (x, z) => x > PX0 && x < PX1 && z > PZ0;
+function terr(x, z) {
+  let y;
+  if (x < BX0 - 10) y = 9; else if (x < BX0) y = lerp(9, 2.5, smooth(BX0 - 10, BX0, x));
+  else if (x <= BX1) y = 2.5 + bars(x, z);
+  else if (x < BX1 + 10) y = lerp(2.5, 9, smooth(BX1, BX1 + 10, x)); else y = 9;
+  if (inPond(x, z)) y = Math.min(y, 5.2);
+  return y;
+}
+const pondY = () => 5.2 + ST.L * 3;
+function riverSpan() { const w = lerp(18, BX1 - BX0, clamp(ST.riverK, 0, 1)); return [RXC - w / 2, RXC + w / 2].map(v => clamp(v, BX0, BX1)); }
+const riverY = () => lerp(3.0, 3.8, clamp(ST.riverK, 0, 1));
+const galY = x => -3 - (x - GX0) * 0.015;
+/* 地下水面（示意）：存摺餘額越多越高；人工湖下面長出「水丘」；集水廊道附近被取水拉低 */
+function wtAt(x) {
+  const T = lerp(-9, 0, ST.B / SIM.BMAX), Rv = Math.min(2.1, T + (ST.wet ? 4 : 2.5)), rv = smooth(BX0 - 14, BX0, x) * (1 - smooth(BX1, BX1 + 14, x));
+  let y = lerp(T, Rv, rv);
+  y += ST.M * Math.max(0, 4.6 - T) * Math.exp(-(((x + 67) / 26) ** 2));
+  y -= ST.G * 1.6 * Math.exp(-(((x - 17) / 34) ** 2));
+  return Math.min(y, terr(x, Z1) - 0.3);
+}
+
+/* ---------- 3D 場景 ---------- */
+function buildGround(pebT) {
+  OBJ.grid = makeGrid(111, 51, (i, j) => [X0 + i * 2, Z0 + j * 2], (x, z) => {
+    if (inPond(x, z)) return [0.6, 0.56, 0.48, 0.55];
+    if (x >= BX0 - 1 && x <= BX1 + 1) return [0.75, 0.72, 0.66, 1];
+    if (x > BX0 - 10 && x < BX1 + 10) return [0.48, 0.58, 0.34, 0];
+    const f = 0.5 + 0.5 * Math.sin(x * 0.3) * Math.sin(z * 0.21);
+    return [lerp(0.4, 0.58, f), lerp(0.56, 0.62, f), lerp(0.28, 0.34, f), 0];
+  }, blendMat(pebT, { transparent: true }), 6);
+  OBJ.grid.setY(terr);
+  blobShadow(380, 190, YB - 1.5).position.set(25, YB - 1.5, 0);
+}
+const FW = 1024, FH = 256;
+const pxX = x => (x - X0) / (X1 - X0) * FW, xOf = p => X0 + p / FW * (X1 - X0), pyY = (y, H = FH) => (YT - y) / (YT - YB) * H;
+function buildFaces() {
+  const F = OBJ.front = canvasTex(FW, FH);
+  F.P = { gravel: F.ctx.createPattern(makePattern('gravel', '#857a68', 3), 'repeat'), soil: F.ctx.createPattern(makePattern('soil', '#8b6e4c', 5), 'repeat') };
+  F.face = makeFace(110, t => [lerp(X0, X1, t), Z1, t], F.tex);
+  const r = rng(4); OBJ.lens = Array.from({ length: 9 }, () => [lerp(X0, X1, r()), lerp(-30, -6, r()), 14 + r() * 26, 2 + r() * 2.5]);
+  const stat = (w, h, drawExtra) => { const C = canvasTex(w, h), x = C.ctx; x.fillStyle = x.createPattern(makePattern('gravel', '#857a68', 7), 'repeat'); x.fillRect(0, 0, w, h); x.fillStyle = 'rgba(37,140,235,.24)'; x.fillRect(0, pyY(-4.5, h), w, h); x.fillStyle = x.createPattern(makePattern('soil', '#8b6e4c', 9), 'repeat'); x.fillRect(0, 0, w, pyY(7.8, h)); if (drawExtra) drawExtra(x, w, h); return C.tex; };
+  OBJ.back = makeFace(110, t => [lerp(X1, X0, t), Z0, 1 - t], stat(1024, 256));
+  OBJ.left = makeFace(40, t => [X0, lerp(Z0, Z1, t), t], stat(512, 256));
+  OBJ.right = makeFace(40, t => [X1, lerp(Z1, Z0, t), t], stat(512, 256, (x, w, h) => {   // 集水廊道的出口（靠近前面）
+    const u = (Z1 - GZ) / (Z1 - Z0) * w, y = pyY(galY(X1), h); x.fillStyle = '#1f2937'; x.beginPath(); x.arc(u, y, 6, 0, 6.3); x.fill(); x.strokeStyle = '#cbd5e1'; x.lineWidth = 3; x.stroke(); }));
+  const bot = new THREE.Mesh(new THREE.PlaneGeometry(X1 - X0, Z1 - Z0), new THREE.MeshBasicMaterial({ color: 0x3b4a5a, side: THREE.DoubleSide }));
+  bot.rotation.x = -Math.PI / 2; bot.position.y = YB; scene.add(bot);
+  const r2 = rng(9);
+  OBJ.dPond = Array.from({ length: 70 }, () => ({ x: r2(), y: r2(), v: 0.5 + r2() * 0.7 }));
+  OBJ.dRiver = Array.from({ length: 90 }, () => ({ x: r2(), y: r2(), v: 0.5 + r2() * 0.7 }));
+  OBJ.dMud = Array.from({ length: 70 }, () => ({ x: r2(), y: r2(), v: 0.4 + r2() * 0.6 }));
+}
+function faceTop(x, z) {
+  let y = terr(x, z);
+  if (inPond(x, z) && ST.L > 0.03) y = Math.max(y, pondY());
+  const [r0, r1] = riverSpan(); if (x > r0 && x < r1) y = Math.max(y, riverY());
+  return y;
+}
+function updateFaces() { for (const f of [OBJ.front.face, OBJ.back, OBJ.left, OBJ.right]) f.update(faceTop, YB, YB, YT); }
+function drawFront(dt) {
+  const F = OBJ.front, x = F.ctx, W = FW, H = FH, P = F.P, S = p => terr(xOf(p), Z1);
+  x.fillStyle = '#d8e8f2'; x.fillRect(0, 0, W, H);
+  fillBelow(x, W, H, p => pyY(S(p)), P.gravel, 4);
+  fillBetween(x, W, p => pyY(S(p)), p => pyY(S(p) - 1.3), P.soil, 0, pxX(BX0 - 8), 4); fillBetween(x, W, p => pyY(S(p)), p => pyY(S(p) - 1.3), P.soil, pxX(BX1 + 8), W, 4);
+  x.fillStyle = 'rgba(214,196,140,.55)'; for (const [cx, cy, rw, rh] of OBJ.lens) { x.beginPath(); x.ellipse(pxX(cx), pyY(cy), rw / (X1 - X0) * W, rh / (YT - YB) * H, 0, 0, 6.3); x.fill(); }
+  // 地下水（飽含水的卵礫石）
+  fillBetween(x, W, p => pyY(wtAt(xOf(p))), () => H, 'rgba(37,140,235,.34)', 0, W, 4);
+  // 人工湖的水、往下滲的水滴
+  const p0 = pxX(PX0), p1 = pxX(PX1);
+  if (ST.L > 0.03) {
+    const muddy = ST.mud && ST.dep && ST.wet;
+    fillBetween(x, W, () => pyY(pondY()), p => pyY(S(p)), muddy ? 'rgba(140,110,60,.9)' : 'rgba(47,143,157,.9)', p0 + 2, p1 - 2, 4);
+    x.fillStyle = '#bfe6ff';
+    for (const d of OBJ.dPond) { d.y += dt * 0.35 * d.v; if (d.y > 1) { d.y = 0; d.x = Math.random(); } const xx = lerp(PX0 + 2, PX1 - 2, d.x), y0 = 5.2, y1 = wtAt(xx); if (y1 > y0 - 0.5) continue; x.beginPath(); x.ellipse(pxX(xx), pyY(lerp(y0, y1, d.y)), 2.6, 4.5, 0, 0, 6.3); x.fill(); }
+  }
+  // 河水（剖面）
+  const [r0, r1] = riverSpan(), ry = riverY(), muddyR = ST.mud && ST.wet ? 1 : ST.mud ? 0.5 : 0;
+  fillBetween(x, W, () => pyY(ry), p => pyY(Math.min(ry, S(p))), muddyR ? 'rgba(150,118,70,.92)' : 'rgba(64,140,170,.88)', pxX(r0), pxX(r1), 3);
+  // 泥沙被河床的卵礫石擋住（過濾）
+  if (ST.film > 0.01) fillBetween(x, W, p => pyY(Math.min(ry, S(p))), p => pyY(Math.min(ry, S(p)) - 0.25 - ST.film * 0.6), 'rgba(92,64,34,.85)', pxX(r0), pxX(r1), 3);
+  if (muddyR) { x.fillStyle = 'rgba(80,52,22,.9)'; for (const d of OBJ.dMud) { d.y += dt * 0.5 * d.v; if (d.y > 1) { d.y = 0; d.x = Math.random(); } const xx = lerp(r0, r1, d.x); x.fillRect(pxX(xx), pyY(lerp(ry, S(pxX(xx)), d.y)), 3, 3); } }
+  // 河水滲進河床，變成伏流水（乾淨的水）
+  x.fillStyle = '#e0f2fe';
+  for (const d of OBJ.dRiver) {
+    d.y += dt * 0.32 * d.v * (ST.wet ? 1 : 0.5); if (d.y > 1) { d.y = 0; d.x = Math.random(); }
+    const xx = lerp(r0, r1, d.x), y0 = S(pxX(xx)) - 0.3, inG = ST.wd && xx > GX0 && xx < GX1 && ST.gal > 0.05, y1 = inG ? galY(xx) + 1.1 : Math.min(y0 - 0.5, wtAt(xx) - 2);
+    x.beginPath(); x.ellipse(pxX(xx), pyY(lerp(y0, y1, d.y)), 2.4, 4, 0, 0, 6.3); x.fill();
+  }
+  // 地下水面
+  x.beginPath(); for (let p = 0; p <= W; p += 4) { const y = pyY(wtAt(xOf(p))); p ? x.lineTo(p, y) : x.moveTo(p, y); }
+  x.setLineDash([14, 9]); x.lineWidth = 6; x.strokeStyle = 'rgba(255,255,255,.85)'; x.stroke(); x.lineWidth = 3.2; x.strokeStyle = '#0284c7'; x.stroke(); x.setLineDash([]);
+  // 集水廊道（縱剖面）＋導水管
+  const gp = (xx, d) => pyY(galY(xx) + d), g0 = pxX(GX0), g1 = pxX(GX1);
+  x.fillStyle = '#9aa5b1'; x.beginPath(); x.moveTo(g0, gp(GX0, 1.3)); x.lineTo(g1, gp(GX1, 1.3)); x.lineTo(g1, gp(GX1, -1.3)); x.lineTo(g0, gp(GX0, -1.3)); x.closePath(); x.fill();
+  x.fillStyle = '#e2e8f0'; x.beginPath(); x.moveTo(g0 + 4, gp(GX0, 0.9)); x.lineTo(g1, gp(GX1, 0.9)); x.lineTo(g1, gp(GX1, -0.9)); x.lineTo(g0 + 4, gp(GX0, -0.9)); x.closePath(); x.fill();
+  const wf = clamp(ST.gal / SIM.GAL[0], 0, 1);
+  if (ST.wd && wf > 0.02) { x.fillStyle = '#38bdf8'; const h = -0.9 + 1.8 * (0.25 + 0.75 * wf); x.beginPath(); x.moveTo(g0 + 4, gp(GX0, h)); x.lineTo(g1, gp(GX1, h)); x.lineTo(g1, gp(GX1, -0.9)); x.lineTo(g0 + 4, gp(GX0, -0.9)); x.closePath(); x.fill(); }
+  x.fillStyle = '#334155'; for (let p = g0 + 10; p < g1 - 4; p += 16) x.fillRect(p, gp(xOf(p), 1.3), 5, 3);   // 廊道上的集水孔
+  x.fillStyle = '#9aa5b1'; x.beginPath(); x.moveTo(g1, gp(GX1, 0.7)); x.lineTo(W, gp(X1, 0.7)); x.lineTo(W, gp(X1, -0.7)); x.lineTo(g1, gp(GX1, -0.7)); x.closePath(); x.fill();
+  x.fillStyle = ST.wd && wf > 0.02 ? '#38bdf8' : '#e2e8f0'; x.beginPath(); x.moveTo(g1, gp(GX1, 0.35)); x.lineTo(W, gp(X1, 0.35)); x.lineTo(W, gp(X1, -0.4)); x.lineTo(g1, gp(GX1, -0.4)); x.closePath(); x.fill();
+  if (ST.wd && wf > 0.02) { x.fillStyle = '#ffffff'; for (let k = 0; k < 18; k++) { const p = g0 + ((U.time * 60 + k * 60) % (W - g0)); x.fillRect(p, gp(xOf(p), -0.2) - 2, 14, 3); } }
+  x.font = `800 14px ${FONT}`; x.fillStyle = 'rgba(255,255,255,.95)'; x.textAlign = 'right'; x.fillText('示意圖：高度、深度誇大', W - 10, H - 8); x.textAlign = 'left';
+  F.tex.needsUpdate = true;
+}
+function waterMat(color, op = 0.9) { return new THREE.MeshStandardMaterial({ color, normalMap: waterN, normalScale: new THREE.Vector2(0.35, 0.35), roughness: 0.2, metalness: 0, transparent: true, opacity: op, envMapIntensity: 0.5, depthWrite: false }); }
+function buildWater() {
+  OBJ.riverMat = waterMat(0x4f8f97, 0.9);
+  OBJ.river = new THREE.Mesh(new THREE.PlaneGeometry(1, Z1 - Z0), OBJ.riverMat); OBJ.river.rotation.x = -Math.PI / 2; OBJ.river.renderOrder = 2; scene.add(OBJ.river);
+  OBJ.pondMat = waterMat(0x2f8f9d, 0.92);
+  OBJ.pond = new THREE.Mesh(new THREE.PlaneGeometry(PX1 - PX0 - 1, Z1 - PZ0 - 0.6), OBJ.pondMat); OBJ.pond.rotation.x = -Math.PI / 2; OBJ.pond.position.set((PX0 + PX1) / 2, 6, (PZ0 + Z1) / 2 - 0.3); OBJ.pond.renderOrder = 2; scene.add(OBJ.pond);
+  // 引水渠（從上游引來，示意）
+  const conc = new THREE.MeshStandardMaterial({ color: 0xcfcbc2, roughness: 0.85 });
+  for (const dx of [-2.2, 2.2]) { const w = new THREE.Mesh(new THREE.BoxGeometry(0.8, 1.6, PZ0 - Z0 + 2), conc); w.position.set(-64 + dx, 8.8, (Z0 + PZ0) / 2); scene.add(w); }
+  OBJ.inTex = arrowTex('#ffffff'); OBJ.inTex.repeat.set(4, 1);
+  const g = new THREE.PlaneGeometry(PZ0 - Z0 + 2, 3.6); g.rotateX(-Math.PI / 2); g.rotateY(-Math.PI / 2);
+  OBJ.inBase = new THREE.Mesh(g, waterMat(0x2f8f9d, 0)); OBJ.inBase.position.set(-64, 9.15, (Z0 + PZ0) / 2); scene.add(OBJ.inBase);
+  OBJ.inArrow = new THREE.Mesh(g.clone(), new THREE.MeshBasicMaterial({ map: OBJ.inTex, transparent: true, opacity: 0, depthWrite: false })); OBJ.inArrow.position.set(-64, 9.25, (Z0 + PZ0) / 2); OBJ.inArrow.renderOrder = 4; scene.add(OBJ.inArrow);
+}
+function buildGallery() {
+  const c = document.createElement('canvas'); c.width = 256; c.height = 32; const x = c.getContext('2d');
+  x.fillStyle = '#a3adb8'; x.fillRect(0, 0, 256, 32); x.fillStyle = '#334155'; for (let i = 6; i < 256; i += 24) x.fillRect(i, 6, 10, 5);
+  const t = new THREE.CanvasTexture(c); t.wrapS = THREE.RepeatWrapping; t.repeat.set(8, 1); t.colorSpace = THREE.SRGBColorSpace;
+  const m = new THREE.MeshStandardMaterial({ map: t, roughness: 0.8 }), L = GX1 - GX0, ym = galY((GX0 + GX1) / 2);
+  const box = new THREE.Mesh(new THREE.BoxGeometry(L, 2.6, 3), m); box.position.set((GX0 + GX1) / 2, ym, GZ); box.rotation.z = Math.atan(-0.015); scene.add(box);
+  const L2 = X1 - GX1, pipe = new THREE.Mesh(new THREE.CylinderGeometry(0.75, 0.75, L2, 10), new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.6 }));
+  pipe.rotation.z = Math.PI / 2 + Math.atan(-0.015); pipe.position.set((GX1 + X1) / 2, galY((GX1 + X1) / 2), GZ); scene.add(pipe);
+  OBJ.galTex = arrowTex('#e0f2fe'); OBJ.galTex.repeat.set(16, 1);
+  const fg = new THREE.PlaneGeometry(X1 - GX0, 1.6); fg.rotateX(-Math.PI / 2);
+  OBJ.galFlow = new THREE.Mesh(fg, new THREE.MeshBasicMaterial({ map: OBJ.galTex, transparent: true, opacity: 0, depthWrite: false })); OBJ.galFlow.position.set((GX0 + X1) / 2, galY((GX0 + X1) / 2) + 1.45, GZ); OBJ.galFlow.rotation.z = 0; OBJ.galFlow.renderOrder = 5; scene.add(OBJ.galFlow);
+  // 下游比較低的農田（示意）＋水圳
+  const top = -7, pw = 58, pd = 50, px0 = X1 + 2;
+  const side = new THREE.Mesh(new THREE.BoxGeometry(pw, top - YB, pd), new THREE.MeshStandardMaterial({ color: 0x8b6e4c, roughness: 0.95 })); side.position.set(px0 + pw / 2, (top + YB) / 2, Z1 - pd / 2); scene.add(side);
+  const fc = document.createElement('canvas'); fc.width = 512; fc.height = 512; const f = fc.getContext('2d');
+  f.fillStyle = '#7fa65a'; f.fillRect(0, 0, 512, 512); for (let i = 0; i < 512; i += 32) { f.fillStyle = i % 64 ? '#6e9a4c' : '#8cb565'; f.fillRect(0, i, 512, 26); } f.fillStyle = '#c8b38a'; f.fillRect(250, 0, 12, 512);
+  const ft = new THREE.CanvasTexture(fc); ft.colorSpace = THREE.SRGBColorSpace;
+  const fp = new THREE.Mesh(new THREE.PlaneGeometry(pw, pd), new THREE.MeshStandardMaterial({ map: ft, roughness: 0.95 })); fp.rotation.x = -Math.PI / 2; fp.position.set(px0 + pw / 2, top + 0.02, Z1 - pd / 2); scene.add(fp);
+  const im = new THREE.InstancedMesh(new THREE.BoxGeometry(0.8, 0.7, 0.8), new THREE.MeshStandardMaterial({ color: 0x4d7c2f, roughness: 0.8 }), 180), m4 = new THREE.Matrix4(); let n = 0;
+  for (let zz = Z1 - pd + 4; zz < Z1 - 8 && n < 180; zz += 4) for (let xx = px0 + 3; xx < px0 + pw - 2 && n < 180; xx += 2.8) { m4.makeTranslation(xx, top + 0.35, zz); im.setMatrixAt(n++, m4); }
+  im.count = n; scene.add(im);
+  const chG = new THREE.PlaneGeometry(4.6, 2.2); chG.rotateX(-Math.PI / 2); chG.rotateZ(-0.47);
+  const chute = new THREE.Mesh(chG, new THREE.MeshBasicMaterial({ map: OBJ.galTex, transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide })); chute.position.set(X1 + 2.2, (galY(X1) + top) / 2, GZ); scene.add(chute); OBJ.chute = chute;
+  OBJ.canalTex = arrowTex('#ffffff'); OBJ.canalTex.repeat.set(10, 1);
+  const cg = new THREE.PlaneGeometry(pw - 2, 2.6); cg.rotateX(-Math.PI / 2);
+  const cb = new THREE.Mesh(cg, waterMat(0x38bdf8, 0.9)); cb.position.set(px0 + pw / 2, top + 0.08, GZ); scene.add(cb); OBJ.canalWater = cb;
+  OBJ.canalArrow = new THREE.Mesh(cg.clone(), new THREE.MeshBasicMaterial({ map: OBJ.canalTex, transparent: true, opacity: 0, depthWrite: false })); OBJ.canalArrow.position.set(px0 + pw / 2, top + 0.16, GZ); OBJ.canalArrow.renderOrder = 4; scene.add(OBJ.canalArrow);
+}
+
+/* =====================================================================
+   模擬（示意）：地下水存摺。存入＝自然入滲＋人工湖；提出＝二峰圳＋自然流走
+   ===================================================================== */
+function step(dt) {   // dt：天
+  const s = ST.wet ? 0 : 1, active = ST.dep && ST.wet;
+  ST.L = clamp(ST.L + (active ? 0.6 : 0) * dt - (ST.L > 0 ? 0.12 : 0) * dt, 0, 1);
+  const pondIn = ST.L > 0.03 ? SIM.POND : 0, avail = smooth(30, 130, ST.B);
+  ST.gal = ST.wd ? SIM.GAL[s] * avail : 0;
+  ST.inT = SIM.NAT[s] + pondIn; ST.outT = ST.gal + SIM.OUT0 + ST.B * SIM.OUTK;
+  ST.B = clamp(ST.B + (ST.inT - ST.outT) * dt, 0, SIM.BMAX);
+  ST.M += ((ST.L > 0.03 ? 1 : 0) - ST.M) * (1 - Math.exp(-(ST.L > 0.03 ? 0.08 : 0.025) * dt));
+  ST.G += ((ST.wd ? 1 : 0) - ST.G) * (1 - Math.exp(-0.3 * dt));
+  ST.film = clamp(ST.film + (ST.mud && ST.wet ? 0.03 : ST.mud ? 0.01 : -0.004) * dt, 0, 1);
+  ST.def = ST.outT > ST.inT + 0.05 ? ST.def + dt : Math.max(0, ST.def - 2 * dt);
+  const d0 = Math.floor(ST.day); ST.day += dt;
+  if (Math.floor(ST.day) !== d0) { ST.hist.push(ST.B); if (ST.hist.length > 240) ST.hist.shift(); }
+  if (ST.B < 60 && ST.wd && !ST.saidEmpty) { ST.saidEmpty = true; sayAuto('empty'); }
+  else if (ST.def > 40 && !ST.warned) { ST.warned = true; sayAuto('overdraw'); }
+  else if (ST.warned && ST.def === 0 && ST.inT >= ST.outT) { ST.warned = false; ST.saidEmpty = false; sayAuto('balanced'); }
+}
+function setSeason(wet) {
+  ST.wet = wet; markOn('#seaOpts .opt', b => (b.dataset.sea === 'wet') === wet);
+  $('btnDepOn').disabled = !wet; $('depTip').textContent = wet ? '豐水期才有水' : '枯水期引不到水';
+  if (!wet && ST.dep) setDep(false, true);
+  say(wet ? 'wet' : 'dry');
+}
+function setDep(on, quiet) {
+  if (on && !ST.wet) { say('depNoWater'); return; }
+  ST.dep = on; $('btnDepOn').classList.toggle('on', on); $('btnDepOff').classList.toggle('on', !on);
+  if (!quiet) { say(on ? 'depOn' : 'depOff'); if (on) flyTo('dep'); }
+}
+function setWd(on, quiet) { ST.wd = on; $('btnWdOn').classList.toggle('on', on); $('btnWdOff').classList.toggle('on', !on); if (!quiet) { say(on ? 'wdOn' : 'wdOff'); if (on) flyTo('wd'); } }
+function setMud(m) { ST.mud = m; markOn('#turbOpts .opt', b => +b.dataset.m === m); say(m ? 'mud' : 'clear'); if (m) flyTo('section'); }
+function setXray(on) {
+  ST.xray = on; const m = OBJ.grid.mesh.material; m.opacity = on ? 0.28 : 1; m.depthWrite = !on;
+  const fm = OBJ.front.face.mesh.material; fm.transparent = on; fm.opacity = on ? 0.3 : 1; fm.depthWrite = !on; fm.needsUpdate = true;   // 前面的切面也變淡，才看得到後面的集水廊道
+  const b = $('btnXray'); b.classList.toggle('on', on); b.firstChild.textContent = on ? '恢復地面' : '透視地面';
+  if (on) { say('xray'); flyTo('wd'); }
+}
+function reset() {
+  Object.assign(ST, { day: 0, L: 0, M: 0, B: 300, G: 1, film: 0, def: 0, hist: [], warned: false, saidEmpty: false }); SAYQ.length = 0;
+  setSeason(true); setDep(false, true); setWd(true, true); setMud(0); if (ST.xray) setXray(false); say('start');
+}
+
+/* ---------- 提示列 ---------- */
+const MSG = {
+  start: ['info', '<b>任務：</b>左邊是「存款機」人工湖，右邊是「提款機」二峰圳。現在是豐水期：按「打開引水」存款，看看右邊的「地下水存摺」餘額怎麼變。'],
+  depOn: ['info', '人工湖引進溪水，水從池底滲進卵礫石層，池子下面的地下水面長高了，這就是<b>存款</b>。'],
+  depOff: ['info', '人工湖關閉了，池裡的水會慢慢滲完。'],
+  depNoWater: ['warn', '現在是枯水期，溪水太少，人工湖引不到水，存款機只能休息。'],
+  wdOn: ['info', '二峰圳的<b>集水廊道</b>埋在河床下的卵礫石裡，把滲進來的伏流水收集起來，靠重力流到下游的農田，這就是<b>提款</b>。'],
+  wdOff: ['info', '提款機關閉了。地下水面在河床下面慢慢回升。'],
+  mud: ['info', '溪水變濁了！看剖面：泥沙被河床的卵礫石擋在上面，流進集水廊道的水還是清的。如果人工湖直接引濁水進來呢？'],
+  clear: ['info', '溪水變清了。'],
+  wet: ['info', '豐水期：溪水多，正是「存款」的好時機。'],
+  dry: ['info', '枯水期：溪水變少，河床下的伏流水也變少，二峰圳取得到的水跟著變少；人工湖也引不到水。'],
+  overdraw: ['warn', '<b>注意！提款一直比存款多</b>，存摺餘額越來越少。還記得 A1 嗎？地下水透支，地下水位下降、海水入侵、地面下沉……'],
+  empty: ['warn', '存摺快見底了：地下水面降到集水廊道下面，二峰圳也取不到水了！'],
+  balanced: ['good', '存款和提款差不多，存摺餘額穩住了。豐水期多存一點，枯水期才有得領。'],
+  xray: ['info', '地面變透明了：看到埋在河床下的<b>集水廊道</b>了嗎？伏流水從廊道上的小孔滲進去，順著廊道和導水管流到下游。'],
+};
+
+/* ---------- 右側面板 ---------- */
+function drawSpark() {
+  const c = $('spark'), x = c.getContext('2d'), W = c.width, H = c.height, h = ST.hist;
+  x.clearRect(0, 0, W, H); x.fillStyle = 'rgba(255,255,255,.55)'; x.fillRect(0, 0, W, H);
+  const y = v => H - 6 - v / SIM.BMAX * (H - 12);
+  x.strokeStyle = 'rgba(220,38,38,.6)'; x.setLineDash([6, 6]); x.lineWidth = 2; x.beginPath(); x.moveTo(0, y(60)); x.lineTo(W, y(60)); x.stroke(); x.setLineDash([]);
+  if (h.length > 1) {
+    x.beginPath(); h.forEach((v, i) => { const px = i / 239 * W; i ? x.lineTo(px, y(v)) : x.moveTo(px, y(v)); });
+    x.lineWidth = 4; x.strokeStyle = '#15803d'; x.stroke();
+  }
+  x.font = `800 20px ${FONT}`; x.fillStyle = '#3a536d'; x.fillText('存摺餘額（最近 240 天）', 8, 24);
+}
+function updateUI() {
+  $('rDay').textContent = `第 ${Math.floor(ST.day) + 1} 天（示意）`;
+  const s = $('rSea'); s.textContent = ST.wet ? '豐水期' : '枯水期'; s.style.color = ST.wet ? '#0369a1' : '#b45309';
+  $('rIn').textContent = ST.inT.toFixed(1) + ' 萬 m³'; $('rOut').textContent = ST.outT.toFixed(1) + ' 萬 m³';
+  $('rOut').classList.toggle('alert', ST.outT > ST.inT + 0.05);
+  $('rBal').textContent = fmt(ST.B) + ' 萬 m³'; $('bBal').style.width = ST.B / SIM.BMAX * 100 + '%';
+  const st = $('rState'); st.textContent = ST.B < 60 ? '快見底了！' : ST.def > 40 ? '透支中' : ST.inT > ST.outT + 0.05 ? '存款中 ↑' : ST.outT > ST.inT + 0.05 ? '提款中 ↓' : '持平';
+  st.classList.toggle('alert', ST.B < 60 || ST.def > 40);
+  $('rRiver').textContent = ST.mud ? '混濁（泥沙多）' : '清'; $('rRiver').style.color = ST.mud ? '#92400e' : '';
+  $('rGal').textContent = !ST.wd ? '關閉' : ST.gal < 0.05 ? '取不到水' : '清澈' + (ST.wet ? '・水多' : '・水少');
+  $('resMini').textContent = `存摺 ${fmt(ST.B)} 萬・${ST.wet ? '豐' : '枯'}水期`;
+  $('cfgMini').textContent = (ST.dep ? '存款中' : '') + (ST.dep && ST.wd ? '・' : '') + (ST.wd ? '提款中' : '') || '都關閉';
+  drawSpark();
+}
+
+/* ---------- 標籤與說明卡（內容與出處見 事實核實表_v3.md） ---------- */
+const FN = new THREE.Vector3(0, 0, 1), zf = Z1 + 0.4;
+function buildLabels() {
+  addLabel('<b>存</b>存款機：人工湖', 'pin', new THREE.Vector3((PX0 + PX1) / 2, 15, 0), { max: 600, click: () => openPanel('dep'), color: '#16a34a' });
+  addLabel('<b>提</b>提款機：二峰圳', 'pin', new THREE.Vector3(GX0 + 8, 11, GZ), { max: 600, click: () => openPanel('erfeng'), color: '#b45309' });
+  addLabel('<b>伏</b>伏流水', 'pin', new THREE.Vector3(RXC + 18, -1, zf), { max: 520, click: () => openPanel('under'), color: '#0284c7', nrm: FN });
+  addLabel('集水廊道（埋在河床下）', 'geo', new THREE.Vector3(RXC, galY(RXC) - 3.4, zf), { max: 520, nrm: FN });
+  addLabel('導水管 → 往下游', 'geo', new THREE.Vector3(85, galY(85) - 2.6, zf), { max: 520, nrm: FN });
+  addLabel('卵礫石層', 'geo', new THREE.Vector3(-20, -24, zf), { max: 520, nrm: FN });
+  OBJ.lblWt = addLabel('地下水面', 'geo water', new THREE.Vector3(-104, 0, zf), { max: 520, nrm: FN });
+  addLabel('林邊溪（示意）', 'geo water', new THREE.Vector3(RXC, 6, -30), { max: 700 });
+  addLabel('從上游引來的溪水（示意）', 'geo', new THREE.Vector3(-64, 13, -44), { max: 600, show: () => ST.dep });
+  addLabel('下游的農田（地勢比較低，示意）', 'geo', new THREE.Vector3(X1 + 31, -2, 22), { max: 700 });
+  addLabel('水靠重力流出來', 'geo water', new THREE.Vector3(X1 + 6, -3, GZ), { max: 520, show: () => ST.wd && ST.gal > 0.05 });
+  addLabel('示意圖：高度、深度誇大', 'geo exg', new THREE.Vector3(X1 - 28, YB + 4, zf), { max: 700, nrm: FN });
+}
+const SRC = {
+  ting: '丁澈士等（2021）〈地下水人工補注與伏流水開發之回顧與前瞻〉，《土木水利》48(6) 表 1：二峰圳 1923 年完工（鳥居信平），集水廊道取伏流水，完工時豐水期約 25 萬、枯水期約 7.5 萬立方公尺／日（現況約 15 萬、6 萬）。',
+  pthg: '屏東縣政府〈大潮州地下水人工補注湖 113 年引水操作啟動〉（113.06.27）：建功伏流水 111 年起每日約 1 萬噸。',
+  demo: '畫面上的地形、存摺數字、水位和水流是簡化的教學示意。兩個工程實際上在不同地方。',
+};
+const INFO = {
+  station: { t: '本站重點：存款機和提款機', s: '人工湖（存）和二峰圳（領）・示意剖面', b: `
+    <p>地下水銀行有「存款機」，也有「提款機」。</p>
+    <div class="keys"><span>存款機</span><span>人工湖（例如大潮州人工湖）：豐水期把溪水引進來，讓水滲進地下存起來。</span>
+      <span>提款機</span><span>二峰圳：在河床下的卵礫石裡埋一條集水廊道，收集伏流水，靠重力流到下游。</span></div>
+    <p><b>注意：</b>大潮州人工湖和二峰圳是兩個不同的工程，在不同的地方。這一站把它們放在同一個畫面，是為了比一比（示意）。</p>
+    <div class="box2 observe"><b>👀 畫面觀察</b>把溪水切成「濁」，比較河面的水和二峰圳流出來的水。再切到枯水期、只開提款機，看看存摺餘額怎麼變。</div>
+    <div class="box2 think"><b>💡 想一想 1</b>為什麼溪水很濁，二峰圳流出來的水還是清的？
+      <details><summary>看參考答案</summary><p>水要先穿過河床的卵礫石，才進得了集水廊道。泥沙被石頭擋住、過濾掉了，所以流出來的水很乾淨。</p></details></div>
+    <div class="box2 think"><b>💡 想一想 2</b>為什麼人工湖只能在豐水期「存款」？
+      <details><summary>看參考答案</summary><p>枯水期溪水少，沒有多的水可以引進人工湖。豐水期水多，把用不完的水存起來，才不會白白流進海裡。</p></details></div>
+    <div class="box2 think"><b>💡 想一想 3</b>如果一直提款、很少存款，存摺會怎樣？真實世界會發生什麼事？
+      <details><summary>看參考答案</summary><p>餘額越來越少，地下水面越來越低，連提款機都領不到水。想想 A1：地下水透支，會造成海水入侵、地層下陷。所以要「豐水期多存、枯水期省著領」。</p></details></div>
+    <div class="keys"><span>二峰圳</span><span>1923 年完工，由鳥居信平設計。集水廊道埋在林邊溪上游的河床下，取伏流水。</span>
+      <span>出水量</span><span>完工時：豐水期每天約 25 萬立方公尺，枯水期每天約 7.5 萬立方公尺。現況：大約 15 萬和 6 萬立方公尺。</span>
+      <span>新的提款機</span><span>屏東的建功伏流水，民國 111 年起每天約 1 萬噸，供應公共用水。</span>
+      <span>存款機</span><span>大潮州人工湖把雨季的溪水存進地下（A4 看過）。</span></div>
+    <div class="src">${SRC.ting}<br>${SRC.pthg}<br>單位：出處有的用「立方公尺」、有的用「噸」；1 噸的水大約是 1 立方公尺。<br>${SRC.demo}</div>` },
+  dep: { t: '存款機：人工湖', s: '把地面的水存進地下', b: `
+    <p>豐水期溪水多，把一部分溪水引進人工湖。水從池底慢慢滲進地下的卵礫石層，地下水面跟著長高，就像把錢存進銀行。</p>
+    <p>大潮州人工湖就是這樣的「存款機」。它在林邊溪沖積扇的扇頂，地層透水，水很好滲下去。</p>
+    <div class="box2 think"><b>💡 想一想</b>溪水很濁的時候，人工湖可以直接把濁水灌進池子嗎？
+      <details><summary>看參考答案</summary><p>泥沙會沉在池底，把石頭之間的孔隙塞住，水就滲不下去了。所以大潮州人工湖要先沉澱、還要定期清淤（A4）。</p></details></div>
+    <div class="src">丁澈士等（2021）《土木水利》48(6)。<br>${SRC.demo}</div>` },
+  erfeng: { t: '提款機：二峰圳', s: '1923 年完工・鳥居信平設計', b: `
+    <p>二峰圳在林邊溪上游的河床底下，埋了一條<b>地下集水廊道</b>。溪水滲進河床，在卵礫石之間流動（伏流水），再從廊道上的孔流進廊道。</p>
+    <p>廊道把收集到的水，靠重力順著水路流到下游，給農田和居民使用。</p>
+    <div class="keys"><span>完工時</span><span>豐水期每天約 25 萬、枯水期約 7.5 萬立方公尺</span><span>現況</span><span>豐水期每天約 15 萬、枯水期約 6 萬立方公尺</span></div>
+    <div class="box2 think"><b>💡 想一想</b>為什麼枯水期二峰圳取得到的水比較少？
+      <details><summary>看參考答案</summary><p>枯水期溪水少，滲進河床的伏流水也少，地下水面變低，集水廊道收集到的水就跟著變少。</p></details></div>
+    <div class="src">${SRC.ting}<br>廊道的位置、大小和深度是示意。</div>` },
+  under: { t: '伏流水', s: '在河床底下流動的水', b: `
+    <p>溪水有一部分會滲進河床，在卵礫石的縫隙裡慢慢往下游流，這就是<b>伏流水</b>。</p>
+    <p>卵礫石像一層濾網：泥沙被擋在上面，滲下去的水變得比較乾淨。所以伏流水很適合拿來使用。</p>
+    <div class="keys"><span>現在的例子</span><span>屏東的建功伏流水，民國 111 年起每天約 1 萬噸，供應公共用水。</span></div>
+    <div class="src">${SRC.pthg}<br>${SRC.demo}</div>` },
+};
+
+/* ---------- 視角 ---------- */
+const VIEWS = {
+  overview: { t: [30, -8, 0], p: [-5, 190, 285] },
+  section: { t: [0, -10, 50], p: [0, -7, 248] },
+  dep: { t: [-67, 4, 12], p: [-118, 52, 112] },
+  wd: { t: [18, -2, 38], p: [44, 52, 125] },
+  down: { t: [128, -8, 30], p: [190, 32, 118] },
+};
+
+/* ---------- 每一幀 ---------- */
+let uiT = 0, cvT = 0;
+function frame() {
+  const dt = Math.min(clock.getDelta(), 0.1); U.time += dt;
+  if (!ST.paused) step(dt * ST.speed);
+  drainSay();
+  waterN.offset.set(U.time * 0.012, U.time * 0.008);
+  ST.riverK = lerp(ST.riverK, ST.wet ? 1 : 0, 1 - Math.exp(-2 * dt));
+  const [r0, r1] = riverSpan(); OBJ.river.scale.x = r1 - r0; OBJ.river.position.set((r0 + r1) / 2, riverY(), 0);
+  OBJ.riverMat.color.setHex(ST.mud ? (ST.wet ? 0x8a6f45 : 0x7a7558) : 0x4f8f97); OBJ.riverMat.opacity = ST.xray ? 0.45 : 0.9;
+  OBJ.pond.visible = ST.L > 0.03; OBJ.pond.position.y = pondY(); OBJ.pondMat.color.setHex(ST.mud && ST.dep && ST.wet ? 0x8a6f45 : 0x2f8f9d);
+  const din = ST.dep && ST.wet ? 1 : 0; OBJ.inArrow.material.opacity = din; OBJ.inBase.material.opacity = din * 0.85; OBJ.inTex.offset.x = -U.time * 0.8;
+  const go = ST.wd && ST.gal > 0.05 ? 1 : 0; OBJ.galFlow.material.opacity = go * (ST.xray ? 1 : 0.6); OBJ.galTex.offset.x = -U.time * 0.8;
+  OBJ.chute.material.opacity = go; OBJ.canalArrow.material.opacity = go; OBJ.canalTex.offset.x = -U.time * 0.8; OBJ.canalWater.material.opacity = 0.35 + 0.55 * go;
+  if (U.time - cvT > 0.06) { const d = U.time - cvT; cvT = U.time; updateFaces(); drawFront(d); OBJ.lblWt.pos.y = wtAt(-104) + 1.6; }
+  const t = controls.target; t.set(clamp(t.x, -140, 190), clamp(t.y, -40, 30), clamp(t.z, -70, 70));
+  controls.update(); updateLabels();
+  if (U.time - uiT > 0.12) { uiT = U.time; updateUI(); }
+  renderer.render(scene, camera);
+}
+
+function setupUI() {
+  setupCommonUI(v => flyTo(v));
+  onBtns('#seaOpts .opt', b => setSeason(b.dataset.sea === 'wet'));
+  $('btnDepOn').addEventListener('click', () => setDep(true)); $('btnDepOff').addEventListener('click', () => setDep(false));
+  $('btnWdOn').addEventListener('click', () => setWd(true)); $('btnWdOff').addEventListener('click', () => setWd(false));
+  onBtns('#turbOpts .opt', b => setMud(+b.dataset.m));
+  $('btnXray').addEventListener('click', () => setXray(!ST.xray));
+  $('btnPause').addEventListener('click', e => { ST.paused = !ST.paused; e.currentTarget.classList.toggle('on', ST.paused); e.currentTarget.textContent = ST.paused ? '繼續' : '暫停'; });
+  onBtns('[data-sp]', b => { ST.speed = +b.dataset.sp; markOn('[data-sp]', x => x === b); });
+  $('btnReset').addEventListener('click', reset);
+  $('btnCard').addEventListener('click', () => openPanel('station'));
+}
+
+async function init() {
+  setupRenderer({ fog: [520, 1900], minD: 25, maxD: 650 });
+  const [pebT] = await Promise.all([loadTex(TEX + 'ganges_river_pebbles_diff.jpg', true), loadSky()]);
+  waterN = await loadTex(TEX + 'waternormals.jpg');
+  buildGround(pebT); buildFaces(); buildWater(); buildGallery(); buildLabels();
+  setupUI(); updateFaces(); drawFront(0);
+  flyTo(new URLSearchParams(location.search).get('view') || 'overview', 0);
+  say('start'); doneLoading();
+  renderer.setAnimationLoop(frame);
+  window.__a6 = { scene, camera, controls, ST, SIM, OBJ, flyTo, step, setSeason, setDep, setWd, setMud, setXray, reset };   // 除錯用
+}
+init().catch(err => { console.error(err); document.querySelector('#loading div').textContent = '載入失敗，請重新整理（' + err.message + '）'; });
+</script>
+<script src="js/nav.js" data-narrow="1100" data-narrow-pos="center" defer></script>
+</body>
+</html>

@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>A4 沉澱與入滲｜地下水銀行 3D 探索</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script async src="https://cdn.jsdelivr.net/npm/es-module-shims@1.10.0/dist/es-module-shims.js"></script>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+<style>
+:root{
+  --glass: rgba(255,255,255,.72); --stroke: rgba(255,255,255,.78);
+  --ink:#0d2238; --ink2:#3a536d; --accent:#0369a1;
+  --shadow: 0 12px 40px rgba(12,42,80,.22), 0 2px 6px rgba(12,42,80,.10);
+  --radius: 20px;
+  --font: "Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:#b9cfe0;font-family:var(--font);color:var(--ink);-webkit-tap-highlight-color:transparent}
+#app{position:fixed;inset:0;overflow:hidden;user-select:none;-webkit-user-select:none}
+#app canvas{display:block;width:100%;height:100%;touch-action:none;outline:none}
+button{font-family:inherit;color:inherit;cursor:pointer;border:0;background:none}
+a{color:var(--accent)}
+.glass{background:var(--glass);-webkit-backdrop-filter:blur(18px) saturate(170%);backdrop-filter:blur(18px) saturate(170%);border:1px solid var(--stroke);box-shadow:var(--shadow);border-radius:var(--radius)}
+
+#titleCard{position:absolute;top:14px;left:14px;padding:10px 18px 10px 12px;display:flex;gap:12px;align-items:center;z-index:5;max-width:calc(100% - 28px)}
+#titleCard .logo{width:46px;height:46px;flex:none;border-radius:14px;display:grid;place-items:center;background:linear-gradient(145deg,#38bdf8,#0369a1);box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 4px 12px rgba(3,105,161,.35)}
+#titleCard h1{margin:0;font-size:21px;font-weight:900;letter-spacing:.04em;line-height:1.2}
+#titleCard p{margin:2px 0 0;font-size:13.5px;color:var(--ink2);font-weight:500}
+
+#cfg{position:absolute;top:134px;left:14px;width:262px;padding:14px 14px 12px;z-index:6;max-height:calc(100% - 218px);overflow:auto}
+#cfg h3,#res h3{margin:0 0 8px;font-size:17px;font-weight:900}
+.grp{margin-bottom:11px}
+.grp .lab{font-size:13.5px;font-weight:800;color:var(--ink2);margin-bottom:5px}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.opts.c3{grid-template-columns:1fr 1fr 1fr}
+.opt{padding:8px 6px;border-radius:12px;background:rgba(255,255,255,.66);font-size:14.5px;font-weight:800;line-height:1.2;text-align:center}
+.opt small{display:block;font-size:11px;font-weight:700;color:var(--ink2);margin-top:1px}
+.opt.on{background:var(--accent);color:#fff}.opt.on small{color:#e0f2fe}
+.opt.wide{grid-column:1/-1}
+.opt:disabled{opacity:.42;cursor:default}
+.opt.go{background:#16a34a;color:#fff}.opt.go small{color:#dcfce7}
+.opt.warn{background:#b45309;color:#fff}.opt.warn small{color:#ffedd5}
+.note{font-size:11.5px;color:#64748b;line-height:1.55;margin-top:6px}
+
+#res{position:absolute;top:96px;right:14px;width:286px;padding:14px 16px 12px;z-index:6;max-height:calc(100% - 180px);overflow:auto}
+.kv{display:flex;justify-content:space-between;align-items:baseline;font-size:14.5px;margin:6px 0 3px;font-weight:700;gap:8px}
+.kv b{font-size:16px;font-weight:900;white-space:nowrap}
+.kv small{font-size:11px;color:#64748b;font-weight:700}
+.months{display:grid;grid-template-columns:repeat(12,1fr);gap:2px;margin:4px 0 2px}
+.months i{height:20px;border-radius:4px;background:#e2e8f0;font-style:normal;font-size:10.5px;font-weight:800;display:grid;place-items:center;color:#64748b}
+.months i.wet{background:#bae6fd;color:#075985}
+.months i.now{outline:2.5px solid #0d2238;background:#fde68a;color:#0d2238}
+.bar{position:relative;height:12px;border-radius:6px;background:#e2e8f0;overflow:hidden;margin:3px 0 4px}
+.bar>div{height:100%;background:linear-gradient(90deg,#38bdf8,#0369a1);transition:width .25s}
+.bar.mud>div{background:linear-gradient(90deg,#a16207,#713f12)}
+.years{position:relative;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;height:92px;align-items:end;margin:8px 0 2px;padding-top:4px;border-bottom:2px solid #94a3b8}
+.years .y{position:relative;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center}
+.years .y div{width:100%;border-radius:6px 6px 0 0;background:linear-gradient(#38bdf8,#0369a1);transition:height .3s;min-height:0}
+.years .y.bad div{background:linear-gradient(#fbbf24,#b45309)}
+.years .y span{position:absolute;bottom:2px;font-size:12px;font-weight:900;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.5)}
+.years .goal{position:absolute;left:0;right:0;border-top:2px dashed #dc2626;pointer-events:none}
+.years .goal em{position:absolute;right:0;top:-15px;font-style:normal;font-size:10.5px;font-weight:800;color:#dc2626;background:rgba(255,255,255,.8);padding:0 3px;border-radius:3px}
+.ylab{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;font-size:11.5px;font-weight:800;color:var(--ink2);text-align:center}
+
+#rule{position:absolute;left:50%;bottom:78px;transform:translateX(-50%);width:min(700px,calc(100% - 28px));padding:10px 16px 10px 14px;z-index:6;font-size:15.5px;line-height:1.6;display:flex;gap:10px;align-items:flex-start}
+#rule .ico{flex:none;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:#0369a1;color:#fff}
+#rule.warn .ico{background:#dc2626;animation:pulse 1s infinite}
+#rule.good .ico{background:#16a34a}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(220,38,38,.6)}50%{box-shadow:0 0 0 10px rgba(220,38,38,0)}}
+
+#views{position:absolute;left:14px;bottom:14px;display:flex;gap:6px;padding:7px;z-index:5;max-width:calc(100% - 28px);overflow-x:auto;scrollbar-width:none}
+.vw{flex:none;display:flex;align-items:center;gap:7px;padding:8px 13px 8px 8px;border-radius:14px;font-size:15px;font-weight:700;transition:background .2s,transform .2s}
+.vw b{flex:none;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;color:#fff;font-size:14px;background:var(--c)}
+.vw:hover{background:rgba(255,255,255,.7)} .vw.active{background:#fff;transform:translateY(-2px)}
+
+#labels{position:absolute;inset:0;pointer-events:none;z-index:3;overflow:hidden}
+.lbl{position:absolute;left:0;top:0;white-space:nowrap;will-change:transform;transition:opacity .25s}
+.lbl.hide{opacity:0;pointer-events:none}
+.lbl.hide *{pointer-events:none!important}
+.pin{pointer-events:auto;display:flex;align-items:center;gap:6px;padding:4px 11px 4px 4px;border-radius:999px;font-size:14.5px;font-weight:900;background:rgba(255,255,255,.92);box-shadow:0 4px 14px rgba(0,30,60,.25);cursor:pointer;transform:translate(-50%,-100%)}
+.pin b{min-width:22px;height:22px;padding:0 5px;border-radius:11px;display:grid;place-items:center;color:#fff;font-size:12px;background:var(--c,#475569)}
+.geo{padding:3px 10px;border-radius:9px;font-size:14px;font-weight:800;color:#fff;background:rgba(13,34,56,.55);text-shadow:0 1px 2px rgba(0,0,0,.4);transform:translate(-50%,-50%)}
+.geo.water{background:rgba(3,105,161,.66)} .geo.canal{background:rgba(185,28,28,.66)}
+
+#panel{position:absolute;top:96px;right:14px;width:min(400px,calc(100% - 28px));max-height:calc(100% - 190px);overflow:auto;padding:18px 20px;z-index:8;transform:translateX(120%);transition:transform .45s cubic-bezier(.2,.8,.2,1)}
+#panel.open{transform:none}
+#panel h2{margin:0 0 4px;font-size:21px;font-weight:900}
+#panel .sub{font-size:13px;color:var(--ink2);margin-bottom:10px}
+#panel p,.modal p{font-size:15.5px;line-height:1.75;margin:8px 0}
+.x{position:absolute;top:10px;right:10px;width:34px;height:34px;border-radius:50%;font-size:20px;font-weight:900;color:var(--ink2)}
+.x:hover{background:rgba(255,255,255,.7)}
+.keys{display:grid;grid-template-columns:auto 1fr;gap:6px 10px;font-size:15px;margin-top:10px;line-height:1.6}
+.keys span:nth-child(odd){font-weight:900;color:#0c4a6e;white-space:nowrap}
+.src{font-size:12.5px;color:#64748b;line-height:1.6;margin-top:12px;border-top:1px solid rgba(100,116,139,.25);padding-top:8px}
+.box2{border-radius:14px;padding:10px 14px;margin:10px 0;font-size:15.5px;line-height:1.7}
+.box2.observe{background:rgba(14,165,233,.12)} .box2.think{background:rgba(245,158,11,.14)}
+.box2 b{display:block;margin-bottom:2px}
+.box2 details{margin-top:6px}.box2 summary{cursor:pointer;font-weight:800;color:#b45309}
+
+.modal{position:absolute;inset:0;z-index:12;display:none;place-items:center;background:rgba(13,34,56,.42)}
+.modal.open{display:grid}
+.modal .box{position:relative;width:min(720px,calc(100% - 24px));max-height:calc(100% - 24px);overflow:auto;padding:20px 22px 16px}
+.modal h2{margin:0 0 4px;font-size:23px;font-weight:900}
+.modal .sub{font-size:14.5px;color:var(--ink2);margin-bottom:8px}
+.stars{font-size:40px;letter-spacing:6px;color:#f59e0b;margin:4px 0}
+.stars i{font-style:normal;color:#94a3b8}
+.mrow{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:12px}
+.mrow .opt{padding:10px 16px;font-size:16px}
+.cond{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px}
+.cond .c{border-radius:16px;padding:14px 16px;background:#fff;border:2px solid #0369a1;box-shadow:0 6px 16px rgba(3,105,161,.18)}
+.cond .c.lock{border:2px dashed #94a3b8;background:rgba(255,255,255,.5);box-shadow:none;color:#64748b}
+.cond .c .n{display:inline-grid;place-items:center;width:30px;height:30px;border-radius:50%;background:#0369a1;color:#fff;font-weight:900;margin-right:6px}
+.cond .c.lock .n{background:#94a3b8}
+.cond .c h4{display:inline;font-size:18px;font-weight:900;margin:0}
+.cond .c p{font-size:14.5px;line-height:1.65;margin:8px 0 0}
+table.res{width:100%;border-collapse:collapse;font-size:15.5px;margin-top:6px}
+table.res td,table.res th{padding:6px 8px;border-bottom:1px solid rgba(100,116,139,.25);text-align:left}
+table.res td:nth-child(n+2),table.res th:nth-child(n+2){text-align:right}
+
+#credit{position:absolute;right:12px;bottom:14px;z-index:7;max-width:min(520px,calc(100% - 24px));padding:8px 12px;font-size:12.5px;line-height:1.6;color:var(--ink2);cursor:pointer;border-radius:14px}
+#credit b{font-size:13.5px;color:var(--ink);white-space:nowrap}
+#credit span{display:none}
+#credit.open span{display:block;margin-top:4px}
+#loading{position:fixed;inset:0;z-index:20;display:grid;place-items:center;background:linear-gradient(160deg,#dbe8f2,#b9cfe0);transition:opacity .6s}
+#loading div{font-size:17px;font-weight:700;color:var(--ink2)}
+#loading.done{opacity:0;pointer-events:none}
+.fold h3{display:flex;align-items:center;gap:8px;cursor:pointer;margin:0 0 8px}
+.fold h3::after{content:"";margin-left:auto;width:9px;height:9px;border-right:2.5px solid var(--ink2);border-bottom:2.5px solid var(--ink2);transform:rotate(45deg) translateY(-3px);transition:transform .2s}
+.fold h3 .mini{display:none;font-size:13px;font-weight:800;color:var(--accent)}
+.fold.closed{width:auto!important;max-width:calc(50% - 20px);padding:9px 14px}
+.fold.closed h3{margin:0}.fold.closed h3::after{transform:rotate(-45deg)}
+.fold.closed h3 .mini{display:inline}
+.fold.closed>*:not(h3){display:none!important}
+@media (max-width:1100px){#cfg{top:58px}#res{top:58px}#panel{top:58px}#titleCard{top:8px}}
+#views{max-width:calc(100% - 150px)}
+@media (max-width:820px){#cfg{width:226px}#res{width:252px}.opt{font-size:13.5px}#rule{font-size:14px}.cond{grid-template-columns:1fr}}
+@media (max-height:620px){#rule{padding:6px 12px;font-size:13.5px;line-height:1.45}#rule .ico{width:24px;height:24px}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="labels"></div>
+
+<div id="titleCard" class="glass">
+  <div class="logo"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M12 3c-3 4-5 6.5-5 9a5 5 0 0 0 10 0c0-2.500-2-5-5-9z"/><path d="M4 21h16M8 18v3M12 17v4M16 18v3"/></svg></div>
+  <div><h1>A4 沉澱與入滲</h1><p>大潮州人工湖：讓泥沙先沉下來，水再滲進地底</p></div>
+</div>
+
+<div id="cfg" class="glass fold">
+  <h3>操作設定<span class="mini" id="cfgMini"></span></h3>
+  <div class="grp"><div class="lab">① 引水（從林邊溪取水）</div>
+    <div class="opts">
+      <button class="opt" id="btnIn" data-on="1">打開引水<small>雨季才有水</small></button>
+      <button class="opt on" id="btnOut" data-on="0">關閉引水</button>
+    </div></div>
+  <div class="grp"><div class="lab">② 溪水有多濁？</div>
+    <div class="opts c3" id="cOpts">
+      <button class="opt" data-c="clear">清<small>泥沙少</small></button>
+      <button class="opt" data-c="turbid">濁<small>一般雨季</small></button>
+      <button class="opt" data-c="typhoon">超濁<small>颱風過後</small></button>
+    </div></div>
+  <div class="grp"><div class="lab">③ 維護</div>
+    <div class="opts">
+      <button class="opt wide warn" id="btnClean" disabled>刮泥清淤<small id="cleanTip">枯水期、池子乾了才能做</small></button>
+    </div></div>
+  <div class="grp"><div class="lab">看地底</div>
+    <div class="opts">
+      <button class="opt wide" id="btnSec">把池子切一塊起來看<small>池底、卵礫石、地下水面</small></button>
+    </div></div>
+  <div class="grp"><div class="lab">時間</div>
+    <div class="opts c3">
+      <button class="opt" id="btnPause">暫停</button>
+      <button class="opt on" data-sp="6">一般</button>
+      <button class="opt" data-sp="18">快轉</button>
+      <button class="opt wide" id="btnSkip" disabled>跳到下一個雨季 ⏭</button>
+    </div></div>
+  <button class="opt wide go" id="btnCard" style="width:100%">本站重點・想一想</button>
+  <div class="note">設施的位置和面積依文獻與空拍影像；入滲量、淤泥厚度、水位的變化是簡化計算（示意），時間加速。</div>
+</div>
+
+<div id="res" class="glass fold">
+  <h3>現在狀況<span class="mini" id="resMini"></span></h3>
+  <div class="kv"><span id="rDate">第 1 年</span><b id="rSeason">–</b></div>
+  <div class="months" id="months"></div>
+  <div class="kv"><span>今天滲進地底 <small>示意</small></span><b id="rToday">–</b></div>
+  <div class="kv"><span>第 1 沉澱池　入滲能力</span><b id="rR1">–</b></div>
+  <div class="bar"><div id="bR1"></div></div>
+  <div class="kv"><span>池底淤泥 <small>示意</small></span><b id="rM1">–</b></div>
+  <div class="bar mud"><div id="bM1"></div></div>
+  <div class="kv"><span>第 2 沉澱池　入滲能力</span><b id="rR2">–</b></div>
+  <div class="bar"><div id="bR2"></div></div>
+  <div class="kv"><span>池底淤泥 <small>示意</small></span><b id="rM2">–</b></div>
+  <div class="bar mud"><div id="bM2"></div></div>
+  <div class="kv"><span>這個雨季累積補注 <small>示意</small></span><b id="rYear">–</b></div>
+  <div class="years" id="years"><div class="goal" id="goalLine"><em>目標 4,500 萬</em></div></div>
+  <div class="ylab"><span>第 1 年</span><span>第 2 年</span><span>第 3 年</span></div>
+  <div class="note">對照：大潮州實際的年平均補注量約 4,657 萬立方公尺（2018～2021 年評估）。</div>
+</div>
+
+<div id="rule" class="glass"><div class="ico"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10 21h4"/></svg></div><div id="ruleTxt"></div></div>
+
+<div id="views" class="glass">
+  <button class="vw" data-v="overview" style="--c:#0284c7"><b>1</b>全景</button>
+  <button class="vw" data-v="intake" style="--c:#b45309"><b>2</b>取水工</button>
+  <button class="vw" data-v="reg" style="--c:#0369a1"><b>3</b>調節池</button>
+  <button class="vw" data-v="p1" style="--c:#0369a1"><b>4</b>第 1 沉澱池</button>
+  <button class="vw" data-v="p2" style="--c:#0369a1"><b>5</b>第 2 沉澱池</button>
+  <button class="vw" data-v="section" style="--c:#7c3aed"><b>6</b>地底剖面</button>
+  <button class="vw" data-v="center" style="--c:#475569"><b>7</b>監控中心</button>
+</div>
+
+<aside id="panel" class="glass">
+  <button class="x" aria-label="關閉">×</button>
+  <h2 id="pTitle"></h2><div class="sub" id="pSub"></div><div id="pBody"></div>
+</aside>
+
+<div class="modal" id="endBox"><div class="box glass">
+  <button class="x" aria-label="關閉">×</button>
+  <h2>三年營運成果</h2>
+  <div class="sub">你當了三年的人工湖管理員。目標：每年雨季都補注 4,500 萬立方公尺以上（示意）。</div>
+  <div class="stars" id="endStars"></div>
+  <table class="res" id="endTable"></table>
+  <p id="endMsg"></p>
+  <div class="mrow">
+    <button class="opt go" id="btnGetCard">領取「補注條件卡」</button>
+    <button class="opt" id="btnAgain">再玩一次</button>
+  </div>
+</div></div>
+
+<div class="modal" id="condBox"><div class="box glass">
+  <button class="x" aria-label="關閉">×</button>
+  <h2>補注四條件卡</h2>
+  <div class="sub">每一站會拿到幾張條件卡。到了彰化篇，要用這四張卡檢驗我們的滯洪池。</div>
+  <div class="cond">
+    <div class="c lock"><span class="n">1</span><h4>地層要透水</h4><p>A2「沖積扇的地底祕密」會拿到。</p></div>
+    <div class="c lock"><span class="n">2</span><h4>水要到得了需要的含水層</h4><p>A5「補注水丘與成效」會拿到。</p></div>
+    <div class="c"><span class="n">3</span><h4>水要夠多、夠乾淨</h4><p>泥水直接灌進去，細泥會把石頭之間的孔隙塞住。所以要先讓水慢下來，泥沙沉澱了再入滲。</p></div>
+    <div class="c"><span class="n">4</span><h4>要有空間，還要長期維護</h4><p>池底的淤泥會越積越厚，要趁枯水期刮掉。蓋好不是結束，要一直照顧，才能一直存水。</p></div>
+  </div>
+  <div class="mrow"><button class="opt go" id="btnCondOk">收下了</button></div>
+</div></div>
+
+<div id="credit" class="glass"><b>ⓘ 資料來源</b><span>地形：內政部 20 公尺網格數值地形模型（政府資料開放授權）｜影像：國土測繪中心正射影像（政府資料開放授權）｜圖資：© OpenStreetMap 貢獻者（ODbL）｜材質與天空：Poly Haven（CC0）｜設施與數據：丁澈士等（2021）《土木水利》48(6)、屏東縣政府（113.06.27）｜池水、水流、剖面和模擬數字是教學示意</span></div>
+<div id="loading"><div>正在準備大潮州人工湖…</div></div>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
+
+/* =====================================================================
+   A4 沉澱與入滲（大潮州人工湖第 1 期）
+   座標：1 單位 = 1 公尺；local x 向東、z 向南（自 meta_dz 西北角）
+   world = local − (CX, CZ)，y = 高程 − BASE_H
+   事實數字依 事實核實表_v3.md；模擬（入滲、淤泥、水位）是簡化的教學示意
+   ===================================================================== */
+const DATA = 'data/', TEX = 'assets/tex/';
+const CX = 3350, CZ = 2280;
+let BASE_H = 70; const E = el => el - BASE_H;
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const lerp = (a, b, t) => a + (b - a) * t;
+const smooth = (a, b, v) => { const t = clamp((v - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
+function rng(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+const fmt = n => Math.round(n).toLocaleString('en-US');
+
+/* ---------- 教學模擬的設定值（全部是示意） ---------- */
+const SIM = {
+  R0: 1.0,            // 乾淨池底的入滲速率（公尺／日）：讓「32 公頃 × 一個雨季」落在實際年補注量的量級
+  M0: 10,             // 淤泥厚到這個公分數，入滲能力剩一半
+  DEPTH: 3,           // 池水深（公尺）
+  MUD: [0.030, 0.012],// 每天淤泥增加（公分，濁度＝1 時）：第 1 池攔下大部分
+  CONC: { clear: 0.3, turbid: 1, typhoon: 4 },
+  WET: 184, YEAR: 365, START_DOY: 120,   // 水文年從 5/1 開始；5～10 月是豐水期
+  GOAL: 4500, YEARS: 3,
+};
+const AREA = [19, 13];   // 第 1、第 2 沉澱池面積（公頃；《土木水利》48(6) 圖 4）
+const ST = {
+  t: 0, speed: 6, paused: false, ended: false,
+  intake: false, conc: 'turbid', cleaning: false, cleans: 0,
+  L: [0, 0, 0],          // 水位 0–1：調節池、第 1、第 2
+  mud: [0, 0], today: 0, season: 0, hist: [], mound: 0.15, lift: 0, flow: 0,
+};
+
+async function loadGrid(name) {
+  const meta = await (await fetch(DATA + `meta_${name}.json`)).json();
+  const buf = await (await fetch(DATA + `dem_${name}.f32`)).arrayBuffer();
+  return { meta, H: new Float32Array(buf) };
+}
+const texLoader = new THREE.TextureLoader();
+const loadTex = (url, srgb = false, rep = true) => new Promise((res, rej) => texLoader.load(url, t => {
+  if (srgb) t.colorSpace = THREE.SRGBColorSpace;
+  if (rep) t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.anisotropy = 8; res(t);
+}, undefined, rej));
+function sampler(grid) {
+  const { nx, ny, cell } = grid.meta, H = grid.H;
+  const at = (i, j) => H[clamp(j, 0, ny - 1) * nx + clamp(i, 0, nx - 1)];
+  const cr = (p0, p1, p2, p3, t) => p1 + 0.5 * t * (p2 - p0 + t * (2 * p0 - 5 * p1 + 4 * p2 - p3 + t * (3 * (p1 - p2) + p3 - p0)));
+  return (lx, lz) => {
+    const fx = lx / cell, fz = lz / cell, i = Math.floor(fx), j = Math.floor(fz), tx = fx - i, tz = fz - j;
+    const r = []; for (let k = -1; k <= 2; k++) r.push(cr(at(i - 1, j + k), at(i, j + k), at(i + 1, j + k), at(i + 2, j + k), tx));
+    return cr(r[0], r[1], r[2], r[3], tz);
+  };
+}
+function chaikin(pts, n) {
+  for (let k = 0; k < n; k++) {
+    const o = [pts[0]];
+    for (let i = 0; i < pts.length - 1; i++) { const a = pts[i], b = pts[i + 1]; o.push([a[0] * .75 + b[0] * .25, a[1] * .75 + b[1] * .25], [a[0] * .25 + b[0] * .75, a[1] * .25 + b[1] * .75]); }
+    o.push(pts[pts.length - 1]); pts = o;
+  }
+  return pts;
+}
+function inPoly(x, z, poly) {
+  let c = false;
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    const a = poly[i], b = poly[j];
+    if ((a[1] > z) !== (b[1] > z) && x < (b[0] - a[0]) * (z - a[1]) / (b[1] - a[1]) + a[0]) c = !c;
+  }
+  return c;
+}
+function centroid(poly) { let x = 0, z = 0; for (const p of poly) { x += p[0]; z += p[1]; } return [x / poly.length, z / poly.length]; }
+function bbox(poly) { const xs = poly.map(p => p[0]), zs = poly.map(p => p[1]); return [Math.min(...xs), Math.min(...zs), Math.max(...xs), Math.max(...zs)]; }
+
+let renderer, scene, camera, controls, clock = new THREE.Clock();
+let heightAt, FAC, OSM, waterN, orthoTex;
+const labels = [], PONDS = [], OBJ = {};
+const U = { time: 0 };
+
+init().catch(err => { console.error(err); document.querySelector('#loading div').textContent = '載入失敗，請重新整理（' + err.message + '）'; });
+
+async function init() {
+  const [gD, gO, fac, osm] = await Promise.all([loadGrid('dz'), loadGrid('dzo'), fetch(DATA + 'facilities_dz.json').then(r => r.json()), fetch(DATA + 'osm_dz.json').then(r => r.json())]);
+  FAC = fac; OSM = osm;
+  BASE_H = sampler(gD)(CX, CZ);
+  setupRenderer();
+  const envP = new RGBELoader().loadAsync('assets/hdri/sky_1k.hdr').then(hdr => {
+    hdr.mapping = THREE.EquirectangularReflectionMapping;
+    scene.background = hdr; scene.backgroundIntensity = 0.95;
+    const pm = new THREE.PMREMGenerator(renderer); scene.environment = pm.fromEquirectangular(hdr).texture; pm.dispose();
+  });
+  preparePonds(gD);
+  const t = buildTerrain(gD);
+  await Promise.all([envP, buildTerrainMesh(t)]);
+  await buildOuter(gO, gD);
+  waterN = await loadTex(TEX + 'waternormals.jpg');
+  buildPonds(); buildRiver(); buildIntake(); buildCulvert(); buildLinks(); buildCenter(); buildSection(); buildDiggers();
+  buildLabels(); setupUI();
+  flyTo(new URLSearchParams(location.search).get('view') || 'overview', 0);
+  say('start');
+  const ld = document.getElementById('loading'); ld.classList.add('done'); setTimeout(() => ld.remove(), 700);
+  renderer.setAnimationLoop(frame);
+  window.__a4 = { scene, camera, controls, ST, SIM, PONDS, OBJ, flyTo, stepDays, setIntake, setConc, clean, skip, toggleSection };   // 除錯用
+}
+
+function setupRenderer() {
+  renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  renderer.setSize(innerWidth, innerHeight);
+  renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 0.85;
+  document.getElementById('app').appendChild(renderer.domElement);
+  scene = new THREE.Scene();
+  scene.fog = new THREE.Fog(0xd3d9db, 7000, 19000);
+  camera = new THREE.PerspectiveCamera(45, innerWidth / innerHeight, 1, 40000);
+  controls = new OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true; controls.dampingFactor = 0.08;
+  controls.maxPolarAngle = Math.PI * 0.49; controls.minDistance = 40; controls.maxDistance = 9000;
+  controls.screenSpacePanning = false;
+  const sun = new THREE.DirectionalLight(0xfff1dd, 2.4); sun.position.set(-0.35, 0.8, 0.45).multiplyScalar(1000);
+  scene.add(sun, new THREE.HemisphereLight(0xcfe3ff, 0x6b5a3e, 0.45));
+  addEventListener('resize', () => { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); });
+}
+
+/* =====================================================================
+   池子：外形依正射影像描繪（facilities_dz.json）；水面高取池岸 DEM 的中位數
+   ===================================================================== */
+function preparePonds(g) {
+  const samp = sampler(g);
+  const defs = [['reg', '調節池', 3], ['p1', '第 1 沉澱池', 19], ['p2', '第 2 沉澱池', 13]];
+  FAC.features.filter(f => f.kind === 'pond').forEach((f, i) => {
+    const poly = f.local, hs = poly.map(p => samp(p[0], p[1])).sort((a, b) => a - b);
+    const rim = hs[Math.floor(hs.length * 0.4)], bb = bbox(poly);
+    PONDS.push({ key: defs[i][0], name: defs[i][1], ha: defs[i][2], poly, bb, c: centroid(poly), top: rim - 0.6, bed: rim - 0.6 - SIM.DEPTH });
+  });
+}
+function buildTerrain(g) {
+  const W = g.meta.x1 - g.meta.x0, D = g.meta.y1 - g.meta.y0, STEP = 10;
+  const NX = Math.round(W / STEP) + 1, NZ = Math.round(D / STEP) + 1;
+  const samp = sampler(g), Y = new Float32Array(NX * NZ);
+  for (let j = 0; j < NZ; j++) for (let i = 0; i < NX; i++) {
+    const lx = i * STEP, lz = j * STEP; let y = samp(lx, lz);
+    for (const p of PONDS) if (lx > p.bb[0] && lx < p.bb[2] && lz > p.bb[1] && lz < p.bb[3] && inPoly(lx, lz, p.poly)) y = Math.min(y, p.bed - 0.6);
+    Y[j * NX + i] = y;
+  }
+  heightAt = (wx, wz) => {
+    const fx = clamp((wx + CX) / STEP, 0, NX - 1.001), fz = clamp((wz + CZ) / STEP, 0, NZ - 1.001), i = Math.floor(fx), j = Math.floor(fz), tx = fx - i, tz = fz - j;
+    return lerp(lerp(Y[j * NX + i], Y[j * NX + i + 1], tx), lerp(Y[(j + 1) * NX + i], Y[(j + 1) * NX + i + 1], tx), tz) - BASE_H;
+  };
+  return { NX, NZ, STEP, W, D, Y };
+}
+const groundY = (lx, lz) => heightAt(lx - CX, lz - CZ);
+const V = (lx, lz, dy = 0) => new THREE.Vector3(lx - CX, groundY(lx, lz) + dy, lz - CZ);
+
+function gridGeometry(pos, uv, NX, NZ) {
+  const idx = new Uint32Array((NX - 1) * (NZ - 1) * 6); let p = 0;
+  for (let j = 0; j < NZ - 1; j++) for (let i = 0; i < NX - 1; i++) { const a = j * NX + i, b = a + 1, c = a + NX, d = c + 1; idx[p++] = a; idx[p++] = c; idx[p++] = b; idx[p++] = b; idx[p++] = c; idx[p++] = d; }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3)); geo.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
+  geo.setIndex(new THREE.BufferAttribute(idx, 1)); geo.computeVertexNormals();
+  return geo;
+}
+async function buildTerrainMesh(t) {
+  const [ortho, pebD, rockD, mudD] = await Promise.all([
+    loadTex(DATA + 'ortho_dz.jpg', true, false), loadTex(TEX + 'ganges_river_pebbles_diff.jpg', true),
+    loadTex(TEX + 'dry_riverbed_rock_diff.jpg', true), loadTex(TEX + 'brown_mud_02_diff.jpg', true)]);
+  ortho.anisotropy = 16; orthoTex = ortho; OBJ.pebTex = pebD; OBJ.mudTex = mudD;
+  const mat = new THREE.MeshStandardMaterial({ map: ortho, roughness: 0.95, metalness: 0 });
+  mat.onBeforeCompile = sh => {
+    Object.assign(sh.uniforms, { tPeb: { value: pebD }, tRock: { value: rockD }, tMud: { value: mudD } });
+    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vW;')
+      .replace('#include <worldpos_vertex>', '#include <worldpos_vertex>\nvW = (modelMatrix * vec4(transformed,1.0)).xyz;');
+    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', `#include <common>
+      varying vec3 vW; uniform sampler2D tPeb, tRock, tMud;`)
+      .replace('#include <map_fragment>', `#include <map_fragment>
+      float camD = distance(cameraPosition, vW);
+      float near = 1.0 - smoothstep(80.0, 600.0, camD);
+      vec3 base = diffuseColor.rgb;
+      float lum = dot(base, vec3(.299,.587,.114));
+      float sat = max(max(base.r,base.g),base.b) - min(min(base.r,base.g),base.b);
+      float gravel = smoothstep(0.10, 0.04, sat) * smoothstep(0.12, 0.28, lum);
+      float green = smoothstep(0.02, 0.08, base.g - base.r);
+      vec3 peb = texture2D(tPeb, vW.xz / 3.0).rgb, rock = texture2D(tRock, vW.xz / 9.0).rgb, mud = texture2D(tMud, vW.xz / 5.0).rgb;
+      vec3 det = mix(mud, mix(rock, peb, 0.55), gravel);
+      vec3 detTone = det / (dot(det, vec3(.299,.587,.114)) + 1e-3) * lum;
+      float k = near * mix(0.45, 0.8, gravel) * (1.0 - green * 0.6);
+      diffuseColor.rgb = mix(base, mix(detTone, det * vec3(0.92,0.95,1.0), gravel * 0.7), k);`);
+  };
+  const { NX, NZ, STEP, W, D, Y } = t;
+  const pos = new Float32Array(NX * NZ * 3), uv = new Float32Array(NX * NZ * 2);
+  for (let j = 0; j < NZ; j++) for (let i = 0; i < NX; i++) {
+    const k = j * NX + i;
+    pos[k * 3] = i * STEP - CX; pos[k * 3 + 1] = Y[k] - BASE_H; pos[k * 3 + 2] = j * STEP - CZ;
+    uv[k * 2] = (i * STEP) / W; uv[k * 2 + 1] = 1 - (j * STEP) / D;
+  }
+  OBJ.terrain = new THREE.Mesh(gridGeometry(pos, uv, NX, NZ), mat); scene.add(OBJ.terrain);
+  OBJ.W = W; OBJ.D = D;
+}
+async function buildOuter(gO, gB) {
+  const m = gO.meta, mb = gB.meta, NX = m.nx, NZ = m.ny;
+  const offX = m.x0 - mb.x0, offZ = mb.y1 - m.y1, bw = mb.x1 - mb.x0, bd = mb.y1 - mb.y0;
+  const pos = new Float32Array(NX * NZ * 3), uv = new Float32Array(NX * NZ * 2);
+  for (let j = 0; j < NZ; j++) for (let i = 0; i < NX; i++) {
+    const k = j * NX + i, lx = i * m.cell + offX, lz = j * m.cell + offZ;
+    let y = gO.H[k] - BASE_H;
+    if (lx > 40 && lx < bw - 40 && lz > 40 && lz < bd - 40) y = heightAt(lx - CX, lz - CZ) - 6;
+    pos[k * 3] = lx - CX; pos[k * 3 + 1] = y; pos[k * 3 + 2] = lz - CZ;
+    uv[k * 2] = i / (NX - 1); uv[k * 2 + 1] = 1 - j / (NZ - 1);
+  }
+  const tex = await loadTex(DATA + 'ortho_dzo.jpg', true, false);
+  scene.add(new THREE.Mesh(gridGeometry(pos, uv, NX, NZ), new THREE.MeshStandardMaterial({ map: tex, roughness: 0.97 })));
+}
+
+/* ---------- 池底＋水面 ---------- */
+function shapeGeo(poly) {
+  const sh = new THREE.Shape(poly.map(p => new THREE.Vector2(p[0] - CX, -(p[1] - CZ))));
+  const g = new THREE.ShapeGeometry(sh); g.rotateX(-Math.PI / 2); return g;
+}
+const COL = { clear: new THREE.Color(0x2f8f9d), mud: new THREE.Color(0x8a6a3c), bedClean: new THREE.Color(0xd9d6cf), bedMud: new THREE.Color(0x4f3d28) };
+function buildPonds() {
+  for (const p of PONDS) {
+    const gBed = shapeGeo(p.poly);
+    p.bedMat = new THREE.MeshStandardMaterial({ map: OBJ.pebTex.clone(), color: COL.bedClean.clone(), roughness: 1 });
+    p.bedMat.map.repeat.set(1, 1); p.bedMat.map.needsUpdate = true;
+    { const pa = gBed.attributes.position, uv = new Float32Array(pa.count * 2); for (let i = 0; i < pa.count; i++) { uv[i * 2] = pa.getX(i) / 37; uv[i * 2 + 1] = pa.getZ(i) / 37; } gBed.setAttribute('uv', new THREE.BufferAttribute(uv, 2)); }
+    p.bedMesh = new THREE.Mesh(gBed, p.bedMat); p.bedMesh.position.y = E(p.bed); scene.add(p.bedMesh);
+    const gW = shapeGeo(p.poly), pa = gW.attributes.position;
+    const uv = new Float32Array(pa.count * 2), col = new Float32Array(pa.count * 3), along = new Float32Array(pa.count);
+    const x0 = p.bb[0] - CX, x1 = p.bb[2] - CX;
+    for (let i = 0; i < pa.count; i++) { uv[i * 2] = pa.getX(i) / 90; uv[i * 2 + 1] = pa.getZ(i) / 90; along[i] = (x1 - pa.getX(i)) / (x1 - x0); }   // 水由東往西流：0＝入口、1＝出口
+    gW.setAttribute('uv', new THREE.BufferAttribute(uv, 2)); gW.setAttribute('color', new THREE.BufferAttribute(col, 3));
+    p.along = along;
+    p.wMat = new THREE.MeshStandardMaterial({ vertexColors: true, normalMap: waterN, normalScale: new THREE.Vector2(0.35, 0.35), roughness: 0.3, metalness: 0, transparent: true, opacity: 0.94, envMapIntensity: 0.3 });
+    p.water = new THREE.Mesh(gW, p.wMat); p.water.renderOrder = 2; scene.add(p.water);
+    p.tin = 0; p.tout = 0;
+  }
+}
+function paintPond(p, tin, tout, level) {
+  p.water.visible = level > 0.03;
+  p.water.position.y = E(p.bed) + 0.25 + level * SIM.DEPTH;
+  const col = p.water.geometry.attributes.color, c = new THREE.Color();
+  for (let i = 0; i < col.count; i++) { c.copy(COL.clear).lerp(COL.mud, clamp(lerp(tin, tout, p.along[i]), 0, 1)); col.setXYZ(i, c.r, c.g, c.b); }
+  col.needsUpdate = true;
+}
+
+/* ---------- 帶狀面（河水、渠道箭頭） ---------- */
+function ribbon(pts, width, dy, mat, uScale = 60, cols = 2) {   // 每個頂點都貼在地面上（dy＝離地高度）
+  const n = pts.length, pos = new Float32Array(n * cols * 3), uv = new Float32Array(n * cols * 2), idx = []; let s = 0;
+  for (let i = 0; i < n; i++) {
+    const a = pts[Math.max(0, i - 1)], b = pts[Math.min(n - 1, i + 1)], L = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1, nx = -(b[1] - a[1]) / L, nz = (b[0] - a[0]) / L;
+    if (i) s += Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]);
+    const w = typeof width === 'function' ? width(i / (n - 1)) : width;
+    for (let c = 0; c < cols; c++) {
+      const t = c / (cols - 1), lx = pts[i][0] + nx * w * (0.5 - t), lz = pts[i][1] + nz * w * (0.5 - t), k = i * cols + c;
+      pos.set([lx - CX, groundY(lx, lz) + dy, lz - CZ], k * 3); uv.set([s / uScale, t], k * 2);
+      if (i && c) idx.push(k - cols - 1, k - 1, k - cols, k - 1, k, k - cols);
+    }
+  }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.BufferAttribute(uv, 2)); g.setIndex(idx); g.computeVertexNormals();
+  mat.side = THREE.DoubleSide; const m = new THREE.Mesh(g, mat); m.userData.len = s; return m;
+}
+function arrowTex(color) {
+  const c = document.createElement('canvas'); c.width = 128; c.height = 64; const x = c.getContext('2d');
+  x.strokeStyle = color; x.lineWidth = 12; x.lineCap = 'round'; x.lineJoin = 'round';
+  x.beginPath(); x.moveTo(40, 12); x.lineTo(84, 32); x.lineTo(40, 52); x.stroke();
+  const t = new THREE.CanvasTexture(c); t.wrapS = THREE.RepeatWrapping; t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+function inScene(p) { return p[0] > -50 && p[0] < 6250 && p[1] > -50 && p[1] < 4510; }
+
+function buildRiver() {
+  const ln = OSM.lines.find(l => l.kind === 'river' && l.name === '林邊溪'); if (!ln) return;
+  let pts = ln.pts.filter(inScene); if (pts.length < 2) return;
+  pts = chaikin(pts, 2);
+  // OSM 的線有時由下游往上游畫：用高程判斷，讓 pts 由上游往下游
+  if (groundY(...pts[0]) < groundY(...pts[pts.length - 1])) pts.reverse();
+  OBJ.riverMat = new THREE.MeshStandardMaterial({ color: 0x6f7f78, normalMap: waterN, normalScale: new THREE.Vector2(0.5, 0.5), roughness: 0.2, transparent: true, opacity: 0.0, depthWrite: false });
+  OBJ.riverWet = ribbon(pts, 150, 1.4, OBJ.riverMat, 60, 9); OBJ.riverWet.renderOrder = 1; scene.add(OBJ.riverWet);
+  OBJ.riverDryMat = new THREE.MeshStandardMaterial({ color: 0x4f8f97, normalMap: waterN, normalScale: new THREE.Vector2(0.4, 0.4), roughness: 0.2, transparent: true, opacity: 0.85, depthWrite: false });
+  OBJ.riverDry = ribbon(pts, 30, 1.6, OBJ.riverDryMat, 60, 3); OBJ.riverDry.renderOrder = 1; scene.add(OBJ.riverDry);
+  OBJ.riverPts = pts;
+}
+
+/* ---------- 取水工、固床工（位置依 OSM；外型示意） ---------- */
+function wall(pts, w, h, mat, sink = 2) {
+  const grp = new THREE.Group();
+  for (let i = 0; i < pts.length - 1; i++) {
+    const a = pts[i], b = pts[i + 1], L = Math.hypot(b[0] - a[0], b[1] - a[1]); if (L < 0.5) continue;
+    const m = new THREE.Mesh(new THREE.BoxGeometry(L + w * 0.6, h + sink, w), mat);
+    const mx = (a[0] + b[0]) / 2, mz = (a[1] + b[1]) / 2, y = Math.max(groundY(a[0], a[1]), groundY(b[0], b[1]));
+    m.position.set(mx - CX, y + (h - sink) / 2, mz - CZ); m.rotation.y = -Math.atan2(b[1] - a[1], b[0] - a[0]); grp.add(m);
+  }
+  scene.add(grp); return grp;
+}
+function buildIntake() {
+  const conc = new THREE.MeshStandardMaterial({ color: 0xcfcbc2, roughness: 0.85 });
+  const it = FAC.features.find(f => f.kind === 'intake'), sill = FAC.features.find(f => f.kind === 'bed_sill');
+  if (it) { for (const part of it.local_parts) wall(part, 6, 5, conc); OBJ.intakeP = centroid(it.local_parts.flat()); }
+  if (sill) { for (const part of sill.local_parts) wall(part, 10, 1.6, conc, 3); OBJ.sillP = centroid(sill.local_parts.flat()); }
+}
+function buildCulvert() {
+  const cv = FAC.features.find(f => f.kind === 'culvert'); if (!cv) return;
+  let pts = cv.local.slice(); const reg = PONDS[0];
+  // 讓路線由取水工往調節池
+  const d0 = Math.hypot(pts[0][0] - reg.c[0], pts[0][1] - reg.c[1]), d1 = Math.hypot(pts[pts.length - 1][0] - reg.c[0], pts[pts.length - 1][1] - reg.c[1]);
+  if (d0 < d1) pts.reverse();
+  pts = chaikin(pts, 2); OBJ.culvertPts = pts;
+  const base = new THREE.MeshBasicMaterial({ color: 0x0ea5e9, transparent: true, opacity: 0.28, depthWrite: false });
+  const b = ribbon(pts, 16, 2.2, base); b.renderOrder = 3; scene.add(b);
+  OBJ.culvTex = arrowTex('#ffffff');
+  OBJ.culvMat = new THREE.MeshBasicMaterial({ map: OBJ.culvTex, transparent: true, opacity: 0, depthWrite: false });
+  const a = ribbon(pts, 16, 2.6, OBJ.culvMat, 40); a.renderOrder = 4; scene.add(a);
+}
+function nearestPair(A, B) { let best = [1e18]; for (const a of A) for (const b of B) { const d = (a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2; if (d < best[0]) best = [d, a, b]; } return [best[1], best[2]]; }
+function buildLinks() {
+  OBJ.linkMats = [];
+  for (let i = 0; i < 2; i++) {
+    const [a, b] = nearestPair(PONDS[i].poly, PONDS[i + 1].poly), L = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1, ux = (b[0] - a[0]) / L, uz = (b[1] - a[1]) / L;
+    const pts = []; for (let s = -25; s <= L + 25; s += 10) pts.push([a[0] + ux * s, a[1] + uz * s]);
+    const tex = arrowTex('#ffffff'), mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, opacity: 0, depthWrite: false });
+    const base = ribbon(pts, 14, 2.4, new THREE.MeshBasicMaterial({ color: 0x0ea5e9, transparent: true, opacity: 0.3, depthWrite: false })); base.renderOrder = 3; scene.add(base);
+    const m = ribbon(pts, 14, 2.8, mat, 30); m.renderOrder = 4; scene.add(m);
+    OBJ.linkMats.push({ mat, tex }); PONDS[i].outP = a; PONDS[i + 1].inP = b;
+  }
+}
+function buildCenter() {
+  const b = FAC.features.find(f => f.kind === 'building'); if (!b) return;
+  const c = centroid(b.local), y = groundY(c[0], c[1]);
+  const sh = new THREE.Shape(b.local.map(p => new THREE.Vector2(p[0] - CX, -(p[1] - CZ))));
+  const g = new THREE.ExtrudeGeometry(sh, { depth: 9, bevelEnabled: false }); g.rotateX(-Math.PI / 2);
+  const m = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ color: 0xf1f5f9, roughness: 0.7 })); m.position.y = y; scene.add(m);
+  OBJ.centerP = c;
+}
+
+/* =====================================================================
+   地底剖面：把第 1 沉澱池切一塊「抬起來」，側面用動態畫布畫出地底（示意，深度誇大）
+   ===================================================================== */
+const SEC = { w: 380, d: 230, h: 170 };
+function buildSection() {
+  const p = PONDS[1], c = p.c; SEC.c = c; SEC.top0 = E(p.top) + 0.5;
+  // 預先畫好卵礫石（只畫一次）
+  const pb = document.createElement('canvas'); pb.width = 1024; pb.height = 512; const px = pb.getContext('2d'), r = rng(7);
+  px.fillStyle = '#6f675a'; px.fillRect(0, 0, 1024, 512);
+  for (let i = 0; i < 1700; i++) {
+    const x = r() * 1024, y = 40 + r() * 472, s = 6 + r() * r() * 26, g = 120 + r() * 90 | 0;
+    px.fillStyle = `rgb(${g},${g - 6},${g - 16})`; px.beginPath(); px.ellipse(x, y, s, s * (0.55 + r() * 0.3), r() * 3.14, 0, 6.283); px.fill();
+    px.strokeStyle = 'rgba(40,34,26,.55)'; px.lineWidth = 1.5; px.stroke();
+  }
+  SEC.pebbles = pb;
+  SEC.cv = document.createElement('canvas'); SEC.cv.width = 1024; SEC.cv.height = 512; SEC.ctx = SEC.cv.getContext('2d');
+  SEC.tex = new THREE.CanvasTexture(SEC.cv); SEC.tex.colorSpace = THREE.SRGBColorSpace; SEC.tex.anisotropy = 8;
+  const side = new THREE.MeshBasicMaterial({ map: SEC.tex });
+  const topTex = orthoTex.clone(); topTex.needsUpdate = true;
+  topTex.repeat.set(SEC.w / OBJ.W, SEC.d / OBJ.D); topTex.offset.set((c[0] - SEC.w / 2) / OBJ.W, 1 - (c[1] + SEC.d / 2) / OBJ.D);
+  const top = new THREE.MeshStandardMaterial({ map: topTex, roughness: 0.6 }), bot = new THREE.MeshBasicMaterial({ color: 0x3b4a5a });
+  SEC.mesh = new THREE.Mesh(new THREE.BoxGeometry(SEC.w, SEC.h, SEC.d), [side, side, top, bot, side, side]);
+  SEC.mesh.position.set(c[0] - CX, 0, c[1] - CZ); SEC.mesh.visible = false; SEC.mesh.renderOrder = 5; scene.add(SEC.mesh);
+  SEC.drops = Array.from({ length: 150 }, () => ({ x: r() * 1024, y: r(), v: 0.5 + r() * 0.8 }));
+  SEC.silt = Array.from({ length: 90 }, () => ({ x: r() * 1024, y: r(), v: 0.4 + r() * 0.6 }));
+  SEC.last = 0;
+}
+function drawSection() {
+  const x = SEC.ctx, W = 1024, H = 512, WAT = 62, m = ST.mud[0], L = ST.L[1];
+  const rate = 1 / (1 + m / SIM.M0), flow = rate * Math.min(1, L * 4), tin = pondTurb(1, 0), tmid = (tin + pondTurb(1, 1)) / 2;
+  x.drawImage(SEC.pebbles, 0, 0);
+  // 池水
+  x.fillStyle = '#e8eef2'; x.fillRect(0, 0, W, WAT);
+  if (L > 0.03) { const top = WAT - L * (WAT - 8); const c = COL.clear.clone().lerp(COL.mud, clamp(tmid, 0, 1)); x.fillStyle = `rgb(${c.r * 255 | 0},${c.g * 255 | 0},${c.b * 255 | 0})`; x.globalAlpha = 0.92; x.fillRect(0, top, W, WAT - top); x.globalAlpha = 1;
+    if (ST.flow > 0.05) { x.fillStyle = 'rgba(70,48,24,.75)'; const n = Math.round(90 * clamp(tmid * 1.2, 0.08, 1)); for (let i = 0; i < n; i++) { const s = SEC.silt[i]; s.y += 0.006 * s.v; if (s.y > 1) { s.y = 0; s.x = Math.random() * W; } x.fillRect(s.x, top + s.y * (WAT - top), 3, 3); } } }
+  // 淤泥
+  const mh = clamp(m * 1.6, 0, 34);
+  if (mh > 0.5) { x.fillStyle = '#3f2f1d'; x.fillRect(0, WAT, W, mh); x.fillStyle = 'rgba(63,47,29,.5)'; x.fillRect(0, WAT + mh, W, mh * 0.5); }
+  // 地下水面（補注水丘）
+  const wt = lerp(455, 250, clamp(ST.mound, 0, 1));
+  x.fillStyle = 'rgba(30,120,200,.46)'; x.fillRect(0, wt, W, H - wt);
+  x.strokeStyle = '#7dd3fc'; x.lineWidth = 4; x.setLineDash([16, 10]); x.beginPath(); x.moveTo(0, wt); x.lineTo(W, wt); x.stroke(); x.setLineDash([]);
+  // 入滲的水滴
+  const nd = Math.round(150 * flow);
+  x.fillStyle = '#bfe6ff';
+  for (let i = 0; i < nd; i++) { const d = SEC.drops[i]; d.y += 0.012 * d.v * (0.4 + rate); if (d.y > 1) { d.y = 0; d.x = Math.random() * W; }
+    const y = WAT + mh + d.y * (wt - WAT - mh); x.beginPath(); x.ellipse(d.x, y, 3.2, 6, 0, 0, 6.283); x.fill(); }
+  // 文字
+  x.font = '900 30px "Noto Sans TC","Microsoft JhengHei",sans-serif'; x.textBaseline = 'middle'; x.lineJoin = 'round';
+  const tag = (t, tx, ty, bg) => { const w = x.measureText(t).width + 24; x.fillStyle = bg; x.beginPath(); x.roundRect(tx, ty - 22, w, 44, 12); x.fill(); x.fillStyle = '#fff'; x.fillText(t, tx + 12, ty + 1); };
+  tag(L > 0.03 ? '池水' : '池子乾了', 16, 30, 'rgba(3,105,161,.9)');
+  if (mh > 2) tag('淤泥 ' + m.toFixed(1) + ' 公分：把孔隙塞住了', 300, WAT + 8, 'rgba(63,47,29,.92)');
+  tag('卵礫石層：石頭之間的孔隙很大，水滲得快', 16, 170, 'rgba(13,34,56,.78)');
+  tag('▲ 地下水面' + (flow > 0.3 ? '：正在長高' : ''), 620, wt - 30, 'rgba(2,132,199,.92)');
+  tag('含水層：孔隙裡裝滿了水', 16, Math.min(H - 30, wt + 36), 'rgba(2,132,199,.78)');
+  x.font = '700 20px "Noto Sans TC",sans-serif'; x.fillStyle = 'rgba(255,255,255,.9)'; x.fillText('示意圖：深度誇大', 820, H - 18);
+  SEC.tex.needsUpdate = true;
+}
+function toggleSection(on) {
+  on = on === undefined ? ST.lift < 0.5 : on;
+  SEC.mesh.visible = true;
+  gsap.to(ST, { lift: on ? 1 : 0, duration: 1.6, ease: 'power2.inOut', onComplete: () => { if (!on) SEC.mesh.visible = false; } });
+  document.getElementById('btnSec').classList.toggle('on', on);
+  document.getElementById('btnSec').firstChild.textContent = on ? '把這一塊放回去' : '把池子切一塊起來看';
+  if (on) { flyTo('section'); say('section'); }
+}
+
+/* ---------- 清淤的挖土機（示意） ---------- */
+function buildDiggers() {
+  OBJ.diggers = [];
+  const body = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.6 }), dark = new THREE.MeshStandardMaterial({ color: 0x1f2937, roughness: 0.8 });
+  for (let i = 0; i < 6; i++) {
+    const g = new THREE.Group();
+    const b = new THREE.Mesh(new THREE.BoxGeometry(9, 5, 14), body); b.position.y = 5; g.add(b);
+    const t = new THREE.Mesh(new THREE.BoxGeometry(11, 2.4, 16), dark); t.position.y = 1.2; g.add(t);
+    const a = new THREE.Mesh(new THREE.BoxGeometry(2, 2, 14), body); a.position.set(0, 9, 10); a.rotation.x = 0.5; g.add(a);
+    const bl = new THREE.Mesh(new THREE.BoxGeometry(14, 4, 1.5), dark); bl.position.set(0, 2, 9); g.add(bl);
+    const p = PONDS[i < 4 ? 1 : 2]; g.userData = { p, ph: i * 1.7, r: 60 + (i % 3) * 45 }; g.visible = false; g.scale.setScalar(1.6);
+    scene.add(g); OBJ.diggers.push(g);
+  }
+}
+
+/* =====================================================================
+   模擬（示意）：水位、沉澱、入滲、淤泥
+   ===================================================================== */
+const wetNow = () => (ST.t % SIM.YEAR) < SIM.WET;
+const yearNo = () => Math.floor(ST.t / SIM.YEAR) + 1;
+const rateOf = i => 1 / (1 + ST.mud[i] / SIM.M0);
+function pondTurb(k, end) {   // k：0 調節池、1 第 1、2 第 2；end：0 入口、1 出口。回傳 0–1 的混濁程度（上色用）
+  const c = clamp(SIM.CONC[ST.conc] / 1.6, 0, 1) * (0.25 + 0.75 * ST.flow), f = [[1, 0.85], [0.85, 0.4], [0.4, 0.12]][k][end];
+  return c * f + 0.04;
+}
+function stepDays(days) {
+  while (days > 1e-6 && !ST.ended) {
+    const d = Math.min(1, days); days -= d;
+    const wasWet = wetNow(), on = ST.intake && wasWet && !ST.cleaning;
+    ST.flow = lerp(ST.flow, on ? 1 : 0, 1 - Math.pow(0.5, d));
+    let today = 0;
+    ST.L[0] = clamp(ST.L[0] + (on ? 0.5 : -0.25) * d, 0, 1);
+    for (let i = 0; i < 2; i++) {
+      const r = rateOf(i) * SIM.R0, wet = Math.min(1, ST.L[i + 1] * 4);
+      const inf = AREA[i] * r * wet;               // 萬立方公尺／日（1 公頃 × 1 公尺 = 1 萬立方公尺）
+      today += inf;
+      ST.L[i + 1] = clamp(ST.L[i + 1] + (on ? 0.25 : -r / SIM.DEPTH) * d, 0, 1);
+      if (on) ST.mud[i] += SIM.MUD[i] * SIM.CONC[ST.conc] * d;
+    }
+    ST.today = today; if (wasWet) ST.season += today * d; else if (ST.hist.length) ST.hist[ST.hist.length - 1] += today * d;   // 雨季結束後池裡剩下的水，算在剛結束的那個雨季
+    ST.mound = clamp(ST.mound + (today / 27 * 0.0048 - ST.mound * 0.004) * d, 0.05, 1);
+    ST.t += d;
+    if (wasWet && !wetNow()) endWet();
+    else if (!wasWet && wetNow()) { ST.season = 0; say('wet'); }
+  }
+}
+function endWet() {
+  const y = yearNo(); ST.hist[y - 1] = ST.season; drawYears();
+  if (y >= SIM.YEARS) { ST.ended = true; setTimeout(showEnd, 900); say('end'); }
+  else say(ST.season >= SIM.GOAL ? 'dryGood' : 'dryBad');
+}
+function setIntake(on) {
+  ST.intake = on;
+  document.getElementById('btnIn').classList.toggle('on', on); document.getElementById('btnOut').classList.toggle('on', !on);
+  if (on && !wetNow()) say('noWater'); else if (on) say('intakeOn'); else say('intakeOff');
+}
+function setConc(k) {
+  ST.conc = k; document.querySelectorAll('#cOpts .opt').forEach(b => b.classList.toggle('on', b.dataset.c === k));
+  if (k === 'typhoon') say('typhoon'); else if (k === 'clear') say('clear');
+}
+function canClean() { return !wetNow() && !ST.cleaning && ST.L[1] < 0.03 && ST.L[2] < 0.03 && (ST.mud[0] > 0.3 || ST.mud[1] > 0.3) && !ST.ended; }
+function clean() {
+  if (!canClean()) return;
+  ST.cleaning = true; ST.cleans++; say('cleaning'); flyTo('p1');
+  OBJ.diggers.forEach(g => g.visible = true);
+  gsap.to(ST.mud, { 0: 0, 1: 0, duration: 5, ease: 'power1.inOut', onComplete: () => { ST.cleaning = false; OBJ.diggers.forEach(g => g.visible = false); say('cleaned'); } });
+}
+function skip() { if (wetNow() || ST.cleaning || ST.ended) return; const next = Math.ceil(ST.t / SIM.YEAR) * SIM.YEAR; ST.L = [0, 0, 0]; ST.t = next; ST.season = 0; ST.flow = 0; say('wet'); }
+function reset() {
+  Object.assign(ST, { t: 0, paused: false, ended: false, intake: false, cleaning: false, cleans: 0, L: [0, 0, 0], mud: [0, 0], today: 0, season: 0, hist: [], mound: 0.15, flow: 0 });
+  setIntake(false); setConc('turbid'); drawYears(); say('start'); document.getElementById('btnPause').classList.remove('on'); document.getElementById('btnPause').textContent = '暫停';
+}
+
+/* ---------- 下方提示列 ---------- */
+const MSG = {
+  start: ['info', '<b>任務：當三年的人工湖管理員。</b>現在是 5 月，雨季開始了。按「打開引水」，把林邊溪的水引進來，讓每年雨季的補注量都超過 4,500 萬立方公尺。'],
+  intakeOn: ['info', '溪水從取水工進來，經過輸水箱涵流到調節池，再流進第 1、第 2 沉澱池。水慢下來，泥沙沉到池底，水就從池底滲進地下。'],
+  intakeOff: ['info', '引水關掉了。池裡剩下的水會慢慢滲完。'],
+  noWater: ['warn', '現在是枯水期（11 月到隔年 4 月），溪水太少，引不到水。趁池子乾了，看看池底有沒有淤泥。'],
+  typhoon: ['warn', '颱風過後溪水超級混濁。引進來的水量一樣，但是淤泥會多很多，注意池底！'],
+  clear: ['info', '溪水比較清，淤泥積得慢。'],
+  wet: ['info', '5 月，新的雨季開始了。記得打開引水。'],
+  dryGood: ['good', '雨季結束。<b>這個雨季達成目標！</b>現在進入枯水期，池子會慢慢變乾。看看池底的淤泥，要不要清？'],
+  dryBad: ['warn', '雨季結束，<b>這個雨季沒有達到 4,500 萬立方公尺。</b>是不是引水太晚，或池底被淤泥堵住了？枯水期可以清淤。'],
+  cleaning: ['info', '挖土機開進乾掉的池子，把池底的淤泥刮掉、運走……'],
+  cleaned: ['good', '清好了！石頭之間的孔隙又通了，入滲能力回到 100%。可以按「跳到下一個雨季」。'],
+  section: ['info', '這是把第 1 沉澱池切一塊抬起來的樣子（示意）。看側面：水滴穿過卵礫石往下滲，地下水面慢慢長高。淤泥變厚的時候，水滴有什麼變化？'],
+  end: ['good', '三個雨季結束了，來看看成果。'],
+};
+function say(k) { const [type, html] = MSG[k], el = document.getElementById('rule'); el.className = 'glass ' + (type === 'info' ? '' : type); document.getElementById('ruleTxt').innerHTML = html; }
+
+/* ---------- 右側面板 ---------- */
+function buildMonths() { const el = document.getElementById('months'); for (let m = 1; m <= 12; m++) { const i = document.createElement('i'); i.textContent = m; if (m >= 5 && m <= 10) i.className = 'wet'; el.appendChild(i); } }
+function drawYears() {
+  const el = document.getElementById('years'), MAX = 6000; el.querySelectorAll('.y').forEach(e => e.remove());
+  for (let i = 0; i < SIM.YEARS; i++) { const v = i < ST.hist.length ? ST.hist[i] : (i === ST.hist.length && wetNow() ? ST.season : 0);
+    const y = document.createElement('div'); y.className = 'y' + (i < ST.hist.length && v < SIM.GOAL ? ' bad' : ''); y.innerHTML = `<div style="height:${clamp(v / MAX, 0, 1) * 100}%"></div>` + (v > 300 ? `<span>${fmt(v)}</span>` : ''); el.appendChild(y); }
+  document.getElementById('goalLine').style.bottom = (SIM.GOAL / MAX * 100) + '%';
+}
+let uiT = 0;
+function updateUI() {
+  const doy = (SIM.START_DOY + ST.t) % SIM.YEAR, mo = [31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365].findIndex(e => doy < e) + 1 || 12, wet = wetNow();
+  document.getElementById('rDate').textContent = `第 ${Math.min(yearNo(), SIM.YEARS)} 年 ${mo} 月`;
+  const s = document.getElementById('rSeason'); s.textContent = wet ? '豐水期（雨季）' : '枯水期'; s.style.color = wet ? '#0369a1' : '#b45309';
+  document.querySelectorAll('#months i').forEach((e, i) => e.classList.toggle('now', i + 1 === mo));
+  document.getElementById('rToday').textContent = ST.today.toFixed(1) + ' 萬 m³';
+  for (let i = 0; i < 2; i++) { const r = rateOf(i);
+    document.getElementById('rR' + (i + 1)).textContent = Math.round(r * 100) + '%'; document.getElementById('bR' + (i + 1)).style.width = r * 100 + '%';
+    document.getElementById('rM' + (i + 1)).textContent = ST.mud[i].toFixed(1) + ' 公分'; document.getElementById('bM' + (i + 1)).style.width = clamp(ST.mud[i] / 20, 0, 1) * 100 + '%'; }
+  const shown = wet || !ST.hist.length ? ST.season : ST.hist[ST.hist.length - 1];
+  document.getElementById('rYear').textContent = fmt(shown) + ' 萬 m³';
+  document.getElementById('resMini').textContent = `第 ${Math.min(yearNo(), SIM.YEARS)} 年 ${mo} 月・${fmt(shown)} 萬`;
+  document.getElementById('cfgMini').textContent = ST.intake && wet ? '引水中' : '未引水';
+  const cc = canClean(); document.getElementById('btnClean').disabled = !cc;
+  document.getElementById('cleanTip').textContent = ST.cleaning ? '清淤中…' : cc ? '池子乾了，可以清！' : wet ? '雨季要引水，不能清' : (ST.L[1] > 0.03 || ST.L[2] > 0.03) ? '等池水滲完…' : (ST.mud[0] <= 0.3 ? '池底很乾淨' : '枯水期、池子乾了才能做');
+  document.getElementById('btnSkip').disabled = wet || ST.cleaning || ST.ended;
+  drawYears();
+}
+function showEnd() {
+  const ok = ST.hist.filter(v => v >= SIM.GOAL).length;
+  document.getElementById('endStars').innerHTML = '★'.repeat(ok) + '<i>' + '★'.repeat(SIM.YEARS - ok) + '</i>';
+  document.getElementById('endTable').innerHTML = '<tr><th>雨季</th><th>補注量（萬 m³，示意）</th><th>達成目標</th></tr>' +
+    ST.hist.map((v, i) => `<tr><td>第 ${i + 1} 年</td><td>${fmt(v)}</td><td>${v >= SIM.GOAL ? '✔' : '✘'}</td></tr>`).join('') + `<tr><td>清淤次數</td><td>${ST.cleans} 次</td><td></td></tr>`;
+  const drop = ST.hist[2] < ST.hist[0] * 0.85;
+  document.getElementById('endMsg').innerHTML = ok === SIM.YEARS
+    ? '三年都達標！你讓池底保持乾淨，水才能一直滲得下去。真實的大潮州人工湖，也要趁枯水期清淤，才能維持入滲的效率。'
+    : drop && ST.cleans === 0 ? '補注量一年比一年少。池底的淤泥越積越厚，把卵礫石的孔隙塞住了。<b>枯水期池子乾的時候，試試「刮泥清淤」。</b>'
+    : '有的年份沒有達標。想一想：雨季一開始就引水了嗎？溪水超濁的時候，淤泥是不是積得特別快？枯水期有沒有清淤？';
+  document.getElementById('endBox').classList.add('open');
+}
+
+/* ---------- 標籤與說明卡（內容與出處見 事實核實表_v3.md） ---------- */
+function addLabel(html, cls, pos, maxDist = 1e9, onClick, color) {
+  const div = document.createElement('div'); div.className = 'lbl'; div.innerHTML = `<div class="${cls}">${html}</div>`;
+  if (color) div.firstChild.style.setProperty('--c', color);
+  if (onClick) div.firstChild.addEventListener('click', onClick);
+  document.getElementById('labels').appendChild(div);
+  const L = { el: div, pos, maxDist }; labels.push(L); return L;
+}
+function buildLabels() {
+  const top = (p, dy) => new THREE.Vector3(p.c[0] - CX, E(p.top) + dy, p.c[1] - CZ);
+  addLabel('<b>調</b>調節池・3 公頃', 'pin', top(PONDS[0], 30), 5000, () => openPanel('reg'), '#0369a1');
+  OBJ.lblP1 = addLabel('<b>1</b>第 1 沉澱池・19 公頃', 'pin', top(PONDS[1], 40), 7000, () => openPanel('p1'), '#0369a1');
+  addLabel('<b>2</b>第 2 沉澱池・13 公頃', 'pin', top(PONDS[2], 40), 7000, () => openPanel('p2'), '#0369a1');
+  if (OBJ.intakeP) addLabel('<b>取</b>彎道取水工', 'pin', V(...OBJ.intakeP, 40), 7000, () => openPanel('intake'), '#b45309');
+  if (OBJ.sillP) addLabel('<b>固</b>固床工', 'pin', V(...OBJ.sillP, 22), 3500, () => openPanel('sill'), '#64748b');
+  if (OBJ.centerP) addLabel('<b>監</b>監控中心', 'pin', V(...OBJ.centerP, 30), 4500, () => openPanel('center'), '#475569');
+  if (OBJ.culvertPts) { const p = OBJ.culvertPts[Math.floor(OBJ.culvertPts.length * 0.5)]; addLabel('輸水箱涵（在地下，路線示意）', 'geo canal', V(...p, 26), 6000); }
+  if (OBJ.riverPts) { const n = OBJ.riverPts.length; addLabel('林邊溪 → 往下游（新埤、林邊）', 'geo water', V(...OBJ.riverPts[Math.floor(n * 0.72)], 20), 9000); addLabel('林邊溪（上游是來義）', 'geo water', V(...OBJ.riverPts[Math.floor(n * 0.12)], 20), 9000); }
+}
+const _v = new THREE.Vector3();
+function updateLabels() {
+  const w = innerWidth, h = innerHeight;
+  for (const L of labels) {
+    _v.copy(L.pos).project(camera);
+    const vis = ST.lift < 0.3 && _v.z < 1 && Math.abs(_v.x) < 1.1 && Math.abs(_v.y) < 1.1 && camera.position.distanceTo(L.pos) < L.maxDist;
+    L.el.classList.toggle('hide', !vis);
+    if (vis) L.el.style.transform = `translate(${(_v.x * .5 + .5) * w}px,${(-_v.y * .5 + .5) * h}px)`;
+  }
+}
+const SRC = {
+  ting: '丁澈士等（2021）〈地下水人工補注與伏流水開發之回顧與前瞻〉，《土木水利》第 48 卷第 6 期。',
+  pthg: '屏東縣政府〈大潮州地下水人工補注湖 113 年引水操作啟動〉（113.06.27）。',
+  map: '位置：依國土測繪中心正射影像與 OpenStreetMap。',
+};
+const INFO = {
+  station: { t: '本站重點：沉澱與入滲', s: '大潮州人工湖第 1 期', b: `
+    <p>大潮州人工湖在林邊溪沖積扇的<b>扇頂</b>。雨季的時候，把溪水引進來，讓水從池底滲進地下，存在地底的卵礫石層裡，就像把錢存進銀行。</p>
+    <div class="keys"><span>① 引水</span><span>彎道取水工 → 輸水箱涵</span><span>② 慢下來</span><span>調節池</span><span>③ 沉澱＋入滲</span><span>第 1、第 2 沉澱池（也是補注的湖區）</span></div>
+    <div class="box2 observe"><b>👀 畫面觀察</b>打開引水，看三個池子的水色：越後面的池子，水越清還是越濁？按「把池子切一塊起來看」，淤泥變厚時，往下滲的水滴變多還是變少？</div>
+    <div class="box2 think"><b>💡 想一想 1</b>為什麼不挖一個大池子就好，要讓水一池一池地流過去？
+      <details><summary>看參考答案</summary><p>水流進寬寬的池子會慢下來，泥沙就沉到池底。大部分的泥沙留在前面的池子，後面的池子水比較清，池底比較不會被塞住。</p></details></div>
+    <div class="box2 think"><b>💡 想一想 2</b>清淤為什麼要等到枯水期？
+      <details><summary>看參考答案</summary><p>雨季要把握機會引水、存水。枯水期溪水少，引不到水，池子的水滲完就乾了，機具才開得進去刮泥。</p></details></div>
+    <div class="box2 think"><b>💡 想一想 3</b>如果蓋好之後都不維護，會怎麼樣？
+      <details><summary>看參考答案</summary><p>淤泥越積越厚，把石頭之間的孔隙塞住，水滲不下去，補注量會一年比一年少。水利工程蓋好之後，還要一直照顧。</p></details></div>
+    <div class="keys"><span>實際數字</span><span>2018 年到 2021 年 6 月，取水工一共引水約 3.43 億立方公尺，湖區累積補注約 1.67 億立方公尺；年平均補注約 4,657 萬立方公尺。近年年平均超過 5,500 萬噸。</span>
+      <span>設計</span><span>整個計畫（第 1、2 期）用「最大引水量每秒 116 立方公尺、入滲率每天 10 公尺」來設計。</span>
+      <span>第 2 期</span><span>2024 年送行政院審議：再增加 1 座沉澱池（19.49 公頃）和 3 座補注湖（共 42.76 公頃），預估每年多補注 7,400 萬噸。空拍影像上還看不到。</span></div>
+    <div class="src">${SRC.ting}<br>${SRC.pthg}<br>單位：出處有的用「立方公尺」、有的用「噸」；1 噸的水大約是 1 立方公尺。<br>畫面上的入滲量、淤泥厚度是簡化計算（示意），不是實測值。</div>` },
+  intake: { t: '彎道取水工', s: '林邊溪・取水的地方', b: `
+    <p>取水口設在河道轉彎的地方，把溪水引進輸水箱涵。這裡還有臥箕堰、排砂門、進水閘門和攔污柵。</p>
+    <p>為什麼要選在河彎？上一站「A3 彎道取水」做過實驗。</p>
+    <div class="keys"><span>設計</span><span>整個計畫以取水工最大引水量每秒 116 立方公尺來設計。</span></div>
+    <div class="src">${SRC.ting}<br>${SRC.map}外型是示意。</div>` },
+  sill: { t: '固床工', s: '橫跨林邊溪河床', b: `
+    <p>固床工是橫跨河床的矮堤，把河床的高度固定住，不讓河床被水越沖越低。河床穩定，取水口才能一直取得到水。</p>
+    <div class="src">${SRC.ting}（圖 4 列出第 1 期工程：取水工、輸水工、固床工……）<br>${SRC.map}外型是示意。</div>` },
+  reg: { t: '調節池', s: '約 3 公頃・水進來的第一站', b: `
+    <p>溪水從輸水箱涵出來，先進調節池。水流進寬寬的池子，速度慢下來，比較粗的泥沙先沉下來，再流到第 1 沉澱池。</p>
+    <div class="src">${SRC.ting}（圖 4）<br>${SRC.map}面積是文獻的數字，包含堤岸；空拍影像量到的水面約 1.7 公頃。</div>` },
+  p1: { t: '第 1 沉澱池', s: '約 19 公頃・沉澱兼補注', b: `
+    <p>這是最大的一池。水在這裡停留，細泥沙慢慢沉到池底，水同時從池底滲進地下的卵礫石層。</p>
+    <p>它接在調節池後面，攔下的泥沙最多，所以池底的淤泥也積得最快。</p>
+    <div class="keys"><span>注意</span><span>第 1 期的「湖區」就是這兩座沉澱池，一邊沉澱、一邊補注。</span></div>
+    <div class="src">${SRC.ting}（圖 4；頁 49）<br>《變更潮州都市計畫書》（108.10）頁 23。<br>${SRC.map}空拍影像量到的水面約 14.8 公頃。</div>` },
+  p2: { t: '第 2 沉澱池', s: '約 13 公頃・沉澱兼補注', b: `
+    <p>從第 1 沉澱池流過來的水已經比較清了，在這裡繼續沉澱、繼續入滲。池底的淤泥積得比第 1 池慢。</p>
+    <div class="src">${SRC.ting}（圖 4）<br>${SRC.map}空拍影像量到的水面約 11.3 公頃。</div>` },
+  center: { t: '地下水補注監控中心', s: '看守水量和水位的地方', b: `
+    <p>監控中心用監測系統和觀測井，隨時掌握引了多少水、地下水位升高多少。補注有沒有效，要靠長期的觀測資料來判斷。</p>
+    <div class="keys"><span>觀測結果</span><span>持續補注後，扇頂的地下水位全面抬升至少 3 公尺。</span></div>
+    <div class="src">${SRC.ting}（頁 50）<br>${SRC.map}</div>` },
+};
+function openPanel(key) {
+  const d = INFO[key]; document.getElementById('pTitle').textContent = d.t; document.getElementById('pSub').textContent = d.s;
+  document.getElementById('pBody').innerHTML = d.b; const p = document.getElementById('panel'); p.classList.add('open'); p.scrollTop = 0;
+}
+
+/* ---------- 視角 ---------- */
+function viewDef(v) {
+  const around = (p, dx, dy, dz) => { const t = new THREE.Vector3(p.c[0] - CX, E(p.top), p.c[1] - CZ); return { t, p: t.clone().add(new THREE.Vector3(dx, dy, dz)) }; };
+  if (v === 'reg') return around(PONDS[0], 120, 240, 330);
+  if (v === 'p1') return around(PONDS[1], 150, 520, 640);
+  if (v === 'p2') return around(PONDS[2], 120, 460, 580);
+  if (v === 'section') { const t = new THREE.Vector3(SEC.c[0] - CX, SEC.top0 + SEC.h * 0.55, SEC.c[1] - CZ); return { t, p: t.clone().add(new THREE.Vector3(210, 170, 660)) }; }
+  if (v === 'intake' && OBJ.intakeP) { const t = V(...OBJ.intakeP); return { t, p: t.clone().add(new THREE.Vector3(-260, 300, 380)) }; }
+  if (v === 'center' && OBJ.centerP) { const t = V(...OBJ.centerP); return { t, p: t.clone().add(new THREE.Vector3(60, 150, 260)) }; }
+  const t = new THREE.Vector3(-200, 0, -60); return { t, p: new THREE.Vector3(250, 1500, 1900) };
+}
+function flyTo(v, dur = 1.8) {
+  document.querySelectorAll('.vw').forEach(b => b.classList.toggle('active', b.dataset.v === v));
+  const d = viewDef(v);
+  gsap.killTweensOf(camera.position); gsap.killTweensOf(controls.target);
+  if (!dur) { camera.position.copy(d.p); controls.target.copy(d.t); controls.update(); return; }
+  gsap.to(camera.position, { x: d.p.x, y: d.p.y, z: d.p.z, duration: dur, ease: 'power2.inOut' });
+  gsap.to(controls.target, { x: d.t.x, y: d.t.y, z: d.t.z, duration: dur, ease: 'power2.inOut', onUpdate: () => controls.update() });
+}
+
+/* ---------- 每一幀 ---------- */
+function frame() {
+  const dt = Math.min(clock.getDelta(), 0.1); U.time += dt;
+  if (!ST.paused && !ST.ended && !ST.cleaning) stepDays(dt * ST.speed);
+  const wet = wetNow(), f = ST.flow;
+  // 池水
+  PONDS.forEach((p, k) => paintPond(p, pondTurb(k, 0), pondTurb(k, 1), ST.L[k]));
+  for (let i = 0; i < 2; i++) PONDS[i + 1].bedMat.color.copy(COL.bedClean).lerp(COL.bedMud, clamp(ST.mud[i] / 9, 0, 1));
+  waterN.offset.set(U.time * 0.012, U.time * 0.008);
+  // 河水：豐水期寬而濁、枯水期細而清
+  if (OBJ.riverMat) { const k = OBJ.riverK = lerp(OBJ.riverK ?? (wet ? 1 : 0), wet ? 1 : 0, 0.03); OBJ.riverMat.opacity = 0.82 * k; OBJ.riverDryMat.opacity = 0.85 * (1 - k * 0.6);
+    const c = clamp(SIM.CONC[ST.conc] / 1.6, 0.12, 1); OBJ.riverMat.color.copy(COL.clear).lerp(COL.mud, c); }
+  // 渠道箭頭
+  if (OBJ.culvMat) { OBJ.culvMat.opacity = f; OBJ.culvTex.offset.x = -U.time * 0.9; }
+  OBJ.linkMats.forEach((l, i) => { l.mat.opacity = f * (ST.L[i] > 0.5 ? 1 : 0.3); l.tex.offset.x = -U.time * 0.9; });
+  // 剖面
+  if (SEC.mesh.visible) { SEC.mesh.position.y = SEC.top0 + lerp(-SEC.h - 4, SEC.h + 26, ST.lift) - SEC.h / 2; if (U.time - SEC.last > 0.05) { SEC.last = U.time; drawSection(); } }
+  // 挖土機
+  if (ST.cleaning) for (const g of OBJ.diggers) { const { p, ph, r } = g.userData, a = U.time * 0.5 + ph; const lx = p.c[0] + Math.cos(a) * r * 1.6, lz = p.c[1] + Math.sin(a * 1.3) * r * 0.5; g.position.set(lx - CX, E(p.bed) + 0.3, lz - CZ); g.rotation.y = -a + Math.PI / 2; }
+  controls.update(); updateLabels();
+  if (U.time - uiT > 0.12) { uiT = U.time; updateUI(); }
+  renderer.render(scene, camera);
+}
+
+function setupUI() {
+  const cfg = document.getElementById('cfg'), res = document.getElementById('res');
+  const fold = () => { const w = innerWidth; cfg.classList.toggle('closed', w < 760); res.classList.toggle('closed', w < 1000); };
+  fold(); let lastW = innerWidth; addEventListener('resize', () => { if (Math.abs(innerWidth - lastW) > 80) { lastW = innerWidth; fold(); } });
+  for (const [a, b] of [[cfg, res], [res, cfg]]) a.querySelector('h3').addEventListener('click', () => { a.classList.toggle('closed'); if (!a.classList.contains('closed') && innerWidth < 1000) b.classList.add('closed'); });
+  buildMonths(); drawYears(); setConc('turbid');
+  const $ = id => document.getElementById(id);
+  $('btnIn').addEventListener('click', () => setIntake(true)); $('btnOut').addEventListener('click', () => setIntake(false));
+  document.querySelectorAll('#cOpts .opt').forEach(b => b.addEventListener('click', () => setConc(b.dataset.c)));
+  $('btnClean').addEventListener('click', clean); $('btnSkip').addEventListener('click', skip);
+  $('btnSec').addEventListener('click', () => toggleSection());
+  $('btnPause').addEventListener('click', e => { ST.paused = !ST.paused; e.currentTarget.classList.toggle('on', ST.paused); e.currentTarget.textContent = ST.paused ? '繼續' : '暫停'; });
+  document.querySelectorAll('[data-sp]').forEach(b => b.addEventListener('click', () => { ST.speed = +b.dataset.sp; document.querySelectorAll('[data-sp]').forEach(x => x.classList.toggle('on', x === b)); }));
+  $('btnCard').addEventListener('click', () => openPanel('station'));
+  document.querySelectorAll('.vw').forEach(b => b.addEventListener('click', () => { if (b.dataset.v === 'section') toggleSection(true); else flyTo(b.dataset.v); }));
+  document.querySelector('#panel .x').addEventListener('click', () => $('panel').classList.remove('open'));
+  document.querySelectorAll('.modal').forEach(m => { m.querySelector('.x').addEventListener('click', () => m.classList.remove('open')); m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); }); });
+  $('btnAgain').addEventListener('click', () => { $('endBox').classList.remove('open'); reset(); });
+  $('btnGetCard').addEventListener('click', () => { $('endBox').classList.remove('open'); $('condBox').classList.add('open');
+    try { const got = new Set(JSON.parse(localStorage.getItem('gwbank_cards') || '[]')); got.add(3); got.add(4); localStorage.setItem('gwbank_cards', JSON.stringify([...got])); } catch (e) { } });
+  $('btnCondOk').addEventListener('click', () => $('condBox').classList.remove('open'));
+  $('credit').addEventListener('click', () => $('credit').classList.toggle('open'));
+}
+</script>
+<script src="js/nav.js" data-narrow="1100" data-narrow-pos="center" defer></script>
+</body>
+</html>

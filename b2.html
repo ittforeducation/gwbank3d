@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>B2 三個地點的補注檢驗｜地下水銀行 3D 探索</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script async src="https://cdn.jsdelivr.net/npm/es-module-shims@1.10.0/dist/es-module-shims.js"></script>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+<style>
+:root{
+  --glass: rgba(255,255,255,.72); --stroke: rgba(255,255,255,.78);
+  --ink:#0d2238; --ink2:#3a536d; --accent:#0369a1;
+  --shadow: 0 12px 40px rgba(12,42,80,.22), 0 2px 6px rgba(12,42,80,.10);
+  --radius: 20px;
+  --font: "Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:#b9cfe0;font-family:var(--font);color:var(--ink);-webkit-tap-highlight-color:transparent}
+#app{position:fixed;inset:0;overflow:hidden;user-select:none;-webkit-user-select:none}
+#app canvas{display:block;width:100%;height:100%;touch-action:none;outline:none}
+button{font-family:inherit;color:inherit;cursor:pointer;border:0;background:none}
+a{color:var(--accent)}
+.glass{background:var(--glass);-webkit-backdrop-filter:blur(18px) saturate(170%);backdrop-filter:blur(18px) saturate(170%);border:1px solid var(--stroke);box-shadow:var(--shadow);border-radius:var(--radius)}
+
+#titleCard{position:absolute;top:14px;left:14px;padding:10px 18px 10px 12px;display:flex;gap:12px;align-items:center;z-index:5;max-width:calc(100% - 28px)}
+#titleCard .logo{width:46px;height:46px;flex:none;border-radius:14px;display:grid;place-items:center;background:linear-gradient(145deg,#38bdf8,#0369a1);box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 4px 12px rgba(3,105,161,.35)}
+#titleCard h1{margin:0;font-size:21px;font-weight:900;letter-spacing:.04em;line-height:1.2}
+#titleCard p{margin:2px 0 0;font-size:13.5px;color:var(--ink2);font-weight:500}
+
+#cfg{position:absolute;top:134px;left:14px;width:262px;padding:14px 14px 12px;z-index:6;max-height:calc(100% - 218px);overflow:auto}
+#cfg h3,#res h3{margin:0 0 8px;font-size:17px;font-weight:900}
+.grp{margin-bottom:11px}
+.grp .lab{font-size:13.5px;font-weight:800;color:var(--ink2);margin-bottom:5px}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.opts.c3{grid-template-columns:1fr 1fr 1fr}
+.opt{padding:8px 6px;border-radius:12px;background:rgba(255,255,255,.66);font-size:14.5px;font-weight:800;line-height:1.2;text-align:center}
+.opt small{display:block;font-size:11px;font-weight:700;color:var(--ink2);margin-top:1px}
+.opt.on{background:var(--accent);color:#fff}.opt.on small{color:#e0f2fe}
+.opt.wide{grid-column:1/-1}
+.opt:disabled{opacity:.42;cursor:default}
+.opt.go{background:#16a34a;color:#fff}.opt.go small{color:#dcfce7}
+.opt.warn{background:#b45309;color:#fff}.opt.warn small{color:#ffedd5}
+.note{font-size:11.5px;color:#64748b;line-height:1.55;margin-top:6px}
+
+#res{position:absolute;top:96px;right:14px;width:286px;padding:14px 16px 12px;z-index:6;max-height:calc(100% - 180px);overflow:auto}
+.kv{display:flex;justify-content:space-between;align-items:baseline;font-size:14.5px;margin:6px 0 3px;font-weight:700;gap:8px}
+.kv b{font-size:16px;font-weight:900;white-space:nowrap}
+.kv small{font-size:11px;color:#64748b;font-weight:700}
+.months{display:grid;grid-template-columns:repeat(12,1fr);gap:2px;margin:4px 0 2px}
+.months i{height:20px;border-radius:4px;background:#e2e8f0;font-style:normal;font-size:10.5px;font-weight:800;display:grid;place-items:center;color:#64748b}
+.months i.wet{background:#bae6fd;color:#075985}
+.months i.now{outline:2.5px solid #0d2238;background:#fde68a;color:#0d2238}
+.bar{position:relative;height:12px;border-radius:6px;background:#e2e8f0;overflow:hidden;margin:3px 0 4px}
+.bar>div{height:100%;background:linear-gradient(90deg,#38bdf8,#0369a1);transition:width .25s}
+.bar.mud>div{background:linear-gradient(90deg,#a16207,#713f12)}
+.years{position:relative;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;height:92px;align-items:end;margin:8px 0 2px;padding-top:4px;border-bottom:2px solid #94a3b8}
+.years .y{position:relative;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center}
+.years .y div{width:100%;border-radius:6px 6px 0 0;background:linear-gradient(#38bdf8,#0369a1);transition:height .3s;min-height:0}
+.years .y.bad div{background:linear-gradient(#fbbf24,#b45309)}
+.years .y span{position:absolute;bottom:2px;font-size:12px;font-weight:900;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.5)}
+.years .goal{position:absolute;left:0;right:0;border-top:2px dashed #dc2626;pointer-events:none}
+.years .goal em{position:absolute;right:0;top:-15px;font-style:normal;font-size:10.5px;font-weight:800;color:#dc2626;background:rgba(255,255,255,.8);padding:0 3px;border-radius:3px}
+.ylab{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;font-size:11.5px;font-weight:800;color:var(--ink2);text-align:center}
+
+#rule{position:absolute;left:50%;bottom:78px;transform:translateX(-50%);width:min(700px,calc(100% - 28px));padding:10px 16px 10px 14px;z-index:6;font-size:15.5px;line-height:1.6;display:flex;gap:10px;align-items:flex-start}
+#rule .ico{flex:none;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:#0369a1;color:#fff}
+#rule.warn .ico{background:#dc2626;animation:pulse 1s infinite}
+#rule.good .ico{background:#16a34a}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(220,38,38,.6)}50%{box-shadow:0 0 0 10px rgba(220,38,38,0)}}
+
+#views{position:absolute;left:14px;bottom:14px;display:flex;gap:6px;padding:7px;z-index:5;max-width:calc(100% - 28px);overflow-x:auto;scrollbar-width:none}
+.vw{flex:none;display:flex;align-items:center;gap:7px;padding:8px 13px 8px 8px;border-radius:14px;font-size:15px;font-weight:700;transition:background .2s,transform .2s}
+.vw b{flex:none;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;color:#fff;font-size:14px;background:var(--c)}
+.vw:hover{background:rgba(255,255,255,.7)} .vw.active{background:#fff;transform:translateY(-2px)}
+
+#labels{position:absolute;inset:0;pointer-events:none;z-index:3;overflow:hidden}
+.lbl{position:absolute;left:0;top:0;white-space:nowrap;will-change:transform;transition:opacity .25s}
+.lbl.hide{opacity:0;pointer-events:none}
+.lbl.hide *{pointer-events:none!important}
+.pin{pointer-events:auto;display:flex;align-items:center;gap:6px;padding:4px 11px 4px 4px;border-radius:999px;font-size:14.5px;font-weight:900;background:rgba(255,255,255,.92);box-shadow:0 4px 14px rgba(0,30,60,.25);cursor:pointer;transform:translate(-50%,-100%)}
+.pin b{min-width:22px;height:22px;padding:0 5px;border-radius:11px;display:grid;place-items:center;color:#fff;font-size:12px;background:var(--c,#475569)}
+.geo{padding:3px 10px;border-radius:9px;font-size:14px;font-weight:800;color:#fff;background:rgba(13,34,56,.55);text-shadow:0 1px 2px rgba(0,0,0,.4);transform:translate(-50%,-50%)}
+.geo.water{background:rgba(3,105,161,.66)} .geo.canal{background:rgba(185,28,28,.66)}
+
+#panel{position:absolute;top:96px;right:14px;width:min(400px,calc(100% - 28px));max-height:calc(100% - 190px);overflow:auto;padding:18px 20px;z-index:8;transform:translateX(120%);transition:transform .45s cubic-bezier(.2,.8,.2,1)}
+#panel.open{transform:none}
+#panel h2{margin:0 0 4px;font-size:21px;font-weight:900}
+#panel .sub{font-size:13px;color:var(--ink2);margin-bottom:10px}
+#panel p,.modal p{font-size:15.5px;line-height:1.75;margin:8px 0}
+.x{position:absolute;top:10px;right:10px;width:34px;height:34px;border-radius:50%;font-size:20px;font-weight:900;color:var(--ink2)}
+.x:hover{background:rgba(255,255,255,.7)}
+.keys{display:grid;grid-template-columns:auto 1fr;gap:6px 10px;font-size:15px;margin-top:10px;line-height:1.6}
+.keys span:nth-child(odd){font-weight:900;color:#0c4a6e;white-space:nowrap}
+.src{font-size:12.5px;color:#64748b;line-height:1.6;margin-top:12px;border-top:1px solid rgba(100,116,139,.25);padding-top:8px}
+.box2{border-radius:14px;padding:10px 14px;margin:10px 0;font-size:15.5px;line-height:1.7}
+.box2.observe{background:rgba(14,165,233,.12)} .box2.think{background:rgba(245,158,11,.14)}
+.box2 b{display:block;margin-bottom:2px}
+.box2 details{margin-top:6px}.box2 summary{cursor:pointer;font-weight:800;color:#b45309}
+
+.modal{position:absolute;inset:0;z-index:12;display:none;place-items:center;background:rgba(13,34,56,.42)}
+.modal.open{display:grid}
+.modal .box{position:relative;width:min(720px,calc(100% - 24px));max-height:calc(100% - 24px);overflow:auto;padding:20px 22px 16px}
+.modal h2{margin:0 0 4px;font-size:23px;font-weight:900}
+.modal .sub{font-size:14.5px;color:var(--ink2);margin-bottom:8px}
+.stars{font-size:40px;letter-spacing:6px;color:#f59e0b;margin:4px 0}
+.stars i{font-style:normal;color:#94a3b8}
+.mrow{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:12px}
+.mrow .opt{padding:10px 16px;font-size:16px}
+.cond{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px}
+.cond .c{border-radius:16px;padding:14px 16px;background:#fff;border:2px solid #0369a1;box-shadow:0 6px 16px rgba(3,105,161,.18)}
+.cond .c.lock{border:2px dashed #94a3b8;background:rgba(255,255,255,.5);box-shadow:none;color:#64748b}
+.cond .c .n{display:inline-grid;place-items:center;width:30px;height:30px;border-radius:50%;background:#0369a1;color:#fff;font-weight:900;margin-right:6px}
+.cond .c.lock .n{background:#94a3b8}
+.cond .c h4{display:inline;font-size:18px;font-weight:900;margin:0}
+.cond .c p{font-size:14.5px;line-height:1.65;margin:8px 0 0}
+table.res{width:100%;border-collapse:collapse;font-size:15.5px;margin-top:6px}
+table.res td,table.res th{padding:6px 8px;border-bottom:1px solid rgba(100,116,139,.25);text-align:left}
+table.res td:nth-child(n+2),table.res th:nth-child(n+2){text-align:right}
+
+#credit{position:absolute;right:12px;bottom:14px;z-index:7;max-width:min(520px,calc(100% - 24px));padding:8px 12px;font-size:12.5px;line-height:1.6;color:var(--ink2);cursor:pointer;border-radius:14px}
+#credit b{font-size:13.5px;color:var(--ink);white-space:nowrap}
+#credit span{display:none}
+#credit.open span{display:block;margin-top:4px}
+#loading{position:fixed;inset:0;z-index:20;display:grid;place-items:center;background:linear-gradient(160deg,#dbe8f2,#b9cfe0);transition:opacity .6s}
+#loading div{font-size:17px;font-weight:700;color:var(--ink2)}
+#loading.done{opacity:0;pointer-events:none}
+.fold h3{display:flex;align-items:center;gap:8px;cursor:pointer;margin:0 0 8px}
+.fold h3::after{content:"";margin-left:auto;width:9px;height:9px;border-right:2.5px solid var(--ink2);border-bottom:2.5px solid var(--ink2);transform:rotate(45deg) translateY(-3px);transition:transform .2s}
+.fold h3 .mini{display:none;font-size:13px;font-weight:800;color:var(--accent)}
+.fold.closed{width:auto!important;max-width:calc(50% - 20px);padding:9px 14px}
+.fold.closed h3{margin:0}.fold.closed h3::after{transform:rotate(-45deg)}
+.fold.closed h3 .mini{display:inline}
+.fold.closed>*:not(h3){display:none!important}
+@media (max-width:1100px){#cfg{top:58px}#res{top:58px}#panel{top:58px}#titleCard{top:8px}}
+#views{max-width:calc(100% - 150px)}
+@media (max-width:820px){#cfg{width:226px}#res{width:252px}.opt{font-size:13.5px}#rule{font-size:14px}.cond{grid-template-columns:1fr}}
+@media (max-height:620px){#rule{padding:6px 12px;font-size:13.5px;line-height:1.45}#rule .ico{width:24px;height:24px}}
+</style>
+<style>
+#res{width:340px}
+.chips{display:flex;gap:5px;align-items:center;font-size:12.5px;font-weight:800;color:var(--ink2);margin:2px 0 8px;flex-wrap:wrap}
+.chips i{font-style:normal;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-weight:900;font-size:13px;background:#0369a1;color:#fff}
+.chips i.no{background:none;border:2px dashed #94a3b8;color:#94a3b8}
+.chips button{margin-left:auto;font-size:12.5px;font-weight:800;color:#0369a1;text-decoration:underline}
+.crow{border-radius:13px;background:rgba(255,255,255,.62);padding:8px 10px;margin-bottom:7px}
+.crow .ct{display:flex;align-items:center;gap:6px;font-size:14.5px;font-weight:900;line-height:1.3}
+.crow .ct .n{flex:none;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;background:#0369a1;color:#fff;font-size:12.5px}
+.crow .ev{margin-left:auto;flex:none;font-size:12.5px;font-weight:800;padding:4px 9px;border-radius:9px;background:rgba(3,105,161,.12);color:#0369a1}
+.crow .cb{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;margin-top:6px}
+.vb{padding:6px 2px;border-radius:9px;font-size:13.5px;font-weight:900;background:#fff;border:1.5px solid #cbd5e1}
+.vb:disabled{opacity:.4;cursor:default}
+.vb.v2.on{background:#16a34a;border-color:#16a34a;color:#fff}.vb.v1.on{background:#d97706;border-color:#d97706;color:#fff}.vb.v0.on{background:#dc2626;border-color:#dc2626;color:#fff}
+.fb{font-size:12.5px;line-height:1.55;margin-top:6px;color:#334155}
+.fb b{color:#0c4a6e}.fb.lock{color:#94a3b8;font-weight:700}
+.fb .tag{display:inline-block;font-weight:900;border-radius:6px;padding:0 6px;margin-right:4px;color:#fff;background:#0369a1}
+.fb.diff .tag{background:#b45309}
+table.mx{width:100%;border-collapse:collapse;font-size:13px;margin:6px 0 4px}
+table.mx th,table.mx td{padding:4px 3px;text-align:center;font-weight:800;border-bottom:1px solid rgba(100,116,139,.22)}
+table.mx th:first-child,table.mx td:first-child{text-align:left}
+table.mx th.site{cursor:pointer;color:#0369a1}
+table.mx td.k2{color:#16a34a}table.mx td.k1{color:#d97706}table.mx td.k0{color:#dc2626}table.mx td.kn{color:#cbd5e1}
+table.pour{width:100%;border-collapse:collapse;font-size:12.5px;margin:4px 0}
+table.pour th,table.pour td{padding:3px;text-align:center;font-weight:800;border-bottom:1px solid rgba(100,116,139,.22)}
+table.pour td:first-child,table.pour th:first-child{text-align:left}
+.modeTag{position:absolute;top:14px;left:50%;transform:translateX(-50%);z-index:5;padding:6px 16px;font-weight:900;font-size:15px;border-radius:999px;white-space:nowrap}
+@media (max-width:1100px){.modeTag{top:54px}}
+.modal canvas{width:100%;height:auto;border-radius:12px;background:rgba(255,255,255,.7)}
+.steps{display:flex;gap:6px;margin:4px 0 8px}
+.steps i{flex:1;height:6px;border-radius:3px;background:#cbd5e1}.steps i.on{background:#0369a1}
+.big{font-size:17px!important;font-weight:800;line-height:1.7!important}
+.cite{font-size:12.5px;color:#64748b;line-height:1.6}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="labels"></div>
+
+<div id="titleCard" class="glass">
+  <div class="logo"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5h10M9 12h10M9 19h10"/><path d="M3.500 5l1.200 1.200 2-2.400M3.500 12l1.200 1.200 2-2.400M3.500 19l1.200 1.200 2-2.400"/></svg></div>
+  <div><h1>B2 三個地點的補注檢驗</h1><p>拿出補注四條件，檢驗彰化的滯洪池和河床</p></div>
+</div>
+<div id="modeTag" class="glass modeTag">彰化全景</div>
+
+<div id="cfg" class="glass fold">
+  <h3>操作設定<span class="mini" id="cfgMini"></span></h3>
+  <div class="grp"><div class="lab">① 選一個地點</div>
+    <div class="opts" id="siteOpts">
+      <button class="opt wide on" data-site="all">彰化全景<small>三個地點在哪裡</small></button>
+      <button class="opt wide" data-site="A">甲｜圓林園滯洪池<small>員林・市區的公園</small></button>
+      <button class="opt wide" data-site="B">乙｜萬興滯洪池<small>二林・扇尾的農田邊</small></button>
+      <button class="opt wide" data-site="C">丙｜濁水溪扇頂河床<small>二水到溪州之間</small></button>
+    </div></div>
+  <div class="grp"><div class="lab">② 做實驗（要先選地點）</div>
+    <div class="opts">
+      <button class="opt wide" id="btnSec" disabled>切一塊地底起來看<small>地層是示意圖</small></button>
+      <button class="opt wide go" id="btnPour" disabled>倒水實驗<small>水滲得多快？停在哪一層？</small></button>
+    </div></div>
+  <div class="grp"><div class="lab">③ 都檢驗完了</div>
+    <div class="opts">
+      <button class="opt wide warn" id="btnReveal">揭曉<small id="revTip">已檢驗 0／12 格</small></button>
+    </div></div>
+  <button class="opt wide" id="btnIntro" style="width:100%;margin-bottom:5px">彰化的下陷變化圖</button>
+  <button class="opt wide go" id="btnCard" style="width:100%">本站重點・想一想</button>
+  <div class="note">地點的位置依空拍影像與 OpenStreetMap。地底剖面是依所在位置的一般地層特性畫的示意圖（圓林園、萬興沒有公開的鑽探資料）；倒水實驗的速度和比例是示意，不是實測。</div>
+</div>
+
+<div id="res" class="glass fold">
+  <h3>補注四條件檢核表<span class="mini" id="resMini"></span></h3>
+  <div class="chips" id="chips"></div>
+  <div class="kv" style="margin-top:0"><span id="rSite">先選一個地點</span><b id="rDone"></b></div>
+  <div id="chk"></div>
+  <div class="kv"><span>倒水實驗紀錄 <small>示意</small></span></div>
+  <table class="pour" id="pourTable"></table>
+  <div class="kv"><span>我的檢驗結果</span><small>點地點可以跳過去</small></div>
+  <table class="mx" id="mx"></table>
+  <div class="note">○ 適合　△ 普通／要想辦法　✕ 不適合。沒有標準答案，重點是說得出證據。</div>
+</div>
+
+<div id="rule" class="glass"><div class="ico"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10 21h4"/></svg></div><div id="ruleTxt"></div></div>
+
+<div id="views" class="glass">
+  <button class="vw" data-v="all" style="--c:#0284c7"><b>1</b>彰化全景</button>
+  <button class="vw" data-v="A" style="--c:#0369a1"><b>甲</b>圓林園</button>
+  <button class="vw" data-v="B" style="--c:#b45309"><b>乙</b>萬興</button>
+  <button class="vw" data-v="C" style="--c:#059669"><b>丙</b>扇頂河床</button>
+  <button class="vw" data-v="sec" style="--c:#7c3aed"><b>剖</b>地底剖面</button>
+</div>
+
+<aside id="panel" class="glass">
+  <button class="x" aria-label="關閉">×</button>
+  <h2 id="pTitle"></h2><div class="sub" id="pSub"></div><div id="pBody"></div>
+</aside>
+
+<div class="modal" id="introBox"><div class="box glass">
+  <button class="x" aria-label="關閉">×</button>
+  <h2>彰化的地層下陷，好了嗎？</h2>
+  <div class="sub">顯著下陷面積：一年下陷超過 3 公分的地方有多大（平方公里）</div>
+  <canvas id="subCh" width="1360" height="460"></canvas>
+  <p>彰化的顯著下陷面積，從民國 90 年的 408 平方公里，降到 113、114 年的 0。可是 114 年<b>溪州鄉每年還在下陷 2.9 公分</b>，離 3 公分的門檻只差一點點。</p>
+  <canvas id="subPt" width="1360" height="250"></canvas>
+  <p>再看屏東：110 年已經是 0，111、112 年又變大了。面積歸零，不代表以後都沒事。</p>
+  <p class="big">所以我們要問：彰化也是沖積扇、也有地層下陷，<b>我們的滯洪池能不能效法潮州，變成地下水銀行？</b></p>
+  <div class="cite">資料：經濟部水利署〈114 年度地層下陷檢測結果說明〉（115.03.16）。</div>
+  <div class="mrow"><button class="opt go" id="btnIntroOk">開始檢驗</button></div>
+</div></div>
+
+<div class="modal" id="revBox"><div class="box glass">
+  <button class="x" aria-label="關閉">×</button>
+  <h2 id="revTitle"></h2>
+  <div class="steps" id="revSteps"><i></i><i></i><i></i><i></i></div>
+  <div id="revBody"></div>
+  <div class="mrow">
+    <button class="opt" id="btnRevPrev">‹ 上一頁</button>
+    <button class="opt go" id="btnRevNext">下一頁 ›</button>
+  </div>
+</div></div>
+
+<div class="modal" id="condBox"><div class="box glass">
+  <button class="x" aria-label="關閉">×</button>
+  <h2>補注四條件卡</h2>
+  <div class="sub">這是在屏東篇收集的條件卡。這一站要用它們來檢驗彰化的三個地點。</div>
+  <div class="cond" id="condCards"></div>
+  <div class="mrow"><button class="opt go" id="btnCondOk">知道了</button></div>
+</div></div>
+
+<div id="credit" class="glass"><b>ⓘ 資料來源</b><span>地形：內政部 20 公尺網格數值地形模型（政府資料開放授權）｜影像：國土測繪中心正射影像（政府資料開放授權）｜圖資：© OpenStreetMap 貢獻者（ODbL）｜天空：Poly Haven（CC0）｜下陷：經濟部水利署〈114 年度地層下陷檢測結果說明〉、〈106 年度臺灣地區地層下陷概況說明摘要報告〉｜圓林園：《變更員林都市計畫主要計畫書》（108.01）｜濁水溪沖積扇：黃智昭（2014）《地質》33(2)、水利署電子報第 418 期｜大潮州：丁澈士等（2021）《土木水利》48(6)｜地底剖面、倒水實驗是教學示意</span></div>
+<div id="loading"><div>正在準備彰化的地形…</div></div>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
+import { loadFan, clamp, lerp, smooth, rng } from './js/fan.js';
+
+/* =====================================================================
+   B2 三個地點的補注檢驗
+   場景：ch＝濁水溪沖積扇彰化側（真實地形，高度誇大 VEX 倍）；yl＝圓林園近景；wx＝萬興滯洪池近景（近景是平面＋正射影像）
+   每個地點可以「切一塊地底起來」：側面是動態畫布（地層、地下水面、倒水實驗的水滴）
+   事實數字依 事實核實表_v3.md；地層剖面、倒水的速度與比例是示意
+   ===================================================================== */
+const VEX = 3, DATA = 'data/';
+const $ = id => document.getElementById(id);
+const CONDS = [{ t: '地層要透水' }, { t: '水要到得了需要的含水層' }, { t: '水要夠多、夠乾淨' }, { t: '要有空間，還要長期維護' }];
+const VL = { 2: '○ 適合', 1: '△ 普通', 0: '✕ 不適合' }, VS = { 2: '○', 1: '△', 0: '✕' };
+
+/* 剖面畫布：1024×576；y＝74 是地面。layers：[種類, 上緣, 下緣, 黏土層的缺口] */
+const SW = 1024, SH = 576, G0 = 74;
+const SITES = {
+  A: { tag: '甲', name: '圓林園滯洪池', short: '圓林園', sub: '員林市・扇央的東北邊，靠近八卦台地', scene: 'yl', c: [810, 790], blk: { w: 300, d: 200, h: 170 }, color: '#0369a1',
+    layers: [['soil', 74, 94], ['mix', 94, 215], ['clay', 215, 255, [600, 720]], ['sand', 255, 372], ['clay', 372, 412], ['sand', 412, 522], ['base', 522, 576]], wt: 158,
+    aq: [[185, '第 1 含水層'], [315, '第 2 含水層'], [468, '第 3 含水層']], cl: [[235, 180], [392, 180]], top: '池底（平時是草坪）', topTxt: '砂、礫石夾著泥層', topY: 122,
+    fate: [0.25, 0.67, 0.08], well: true },
+  B: { tag: '乙', name: '萬興滯洪池', short: '萬興', sub: '二林鎮・沖積扇的扇尾', scene: 'wx', c: [1107, 910], blk: { w: 760, d: 480, h: 420 }, color: '#b45309',
+    layers: [['clay', 74, 150], ['sand', 150, 225], ['clay', 225, 290], ['sand', 290, 385], ['clay', 385, 440], ['sand', 440, 530], ['base', 530, 576]], wt: 162,
+    aq: [[192, '第 1 含水層'], [338, '第 2 含水層'], [486, '第 3 含水層']], cl: [[258, 180], [413, 180]], top: '池底', topTxt: '黏土、粉砂（顆粒很細）', topY: 112,
+    fate: [0.6, 0.38, 0.02], well: true },
+  C: { tag: '丙', name: '濁水溪扇頂河床', short: '扇頂河床', sub: '二水到溪州之間・補注地質敏感區', scene: 'ch', c: null, blk: { w: 5600, d: 3400, h: 3000 }, color: '#059669',
+    layers: [['gravel', 74, 576]], wt: 235, aq: [], cl: [], top: '河床', topTxt: '一整層卵礫石，沒有明顯的黏土層', topY: 150,
+    fate: [0.03, 0.9, 0.07], well: false },
+};
+const SPEED = { gravel: 230, mix: 85, sand: 70, clay: 13, soil: 60, base: 0 };
+/* 參考看法（2＝○、1＝△、0＝✕）與理由 */
+const REF = { A: [1, 0, 0, 1], B: [0, 0, 1, 1], C: [2, 1, 2, 1] };
+const FB = {
+  A: ['這裡離開扇頂了，砂、礫石之間夾著泥層，水滲得比扇頂慢。（剖面是示意，這座池子沒有公開的鑽探資料）',
+      '水大多停在淺層，被黏土層擋住，很難到達被抽水、被壓縮的第二、第三含水層。',
+      '下大雨才有水。滿池一次的水量，只有大潮州一年補注量的 1,500 分之 1 左右。市區的雨水還要先淨化。',
+      '池子要先空著等大雨，池底又是大家活動的草坪。想讓水多滲一點，就要改設計。'],
+  B: ['扇尾的顆粒很細、黏土多，水滲得很慢。（剖面是示意，這座池子沒有公開的鑽探資料）',
+      '水被一層又一層的黏土擋住，幾乎都留在地表和淺層。',
+      '大雨時有農田排水可以收，但是能裝多少水，查不到公開的數字。農田的水可能帶著泥沙和肥料，要先處理。',
+      '池子大、有水面，水面上還有太陽能板。滯洪、發電、補注要同時做到，需要好好設計。'],
+  C: ['扇頂以礫石為主，阻水層不明顯，水滲得快。這一帶也是政府公告的「地下水補注地質敏感區」。',
+      '比另外兩處好，但還是有限。扇頂和下游的含水層相通，可是水大多留在淺層。研究估計，只在扇頂補注，對改善溪州下陷的效果大約只有 0.4%。',
+      '雨季的濁水溪水量大。不過水很濁，要想辦法不讓細泥把河床的孔隙塞住。',
+      '河床很寬，不用另外找地，水蓋住河床還能減少揚塵。但是河道要先讓洪水通過，泥沙也會淤積，要常常整理。'],
+};
+const ST = { scene: 'ch', site: 'all', lift: 0, v: { A: [null, null, null, null], B: [null, null, null, null], C: [null, null, null, null] }, seen: { A: [0, 0, 0, 0], B: [0, 0, 0, 0], C: [0, 0, 0, 0] }, pour: {}, rev: 0 };
+try { const s = JSON.parse(localStorage.getItem('gwbank_b2') || 'null'); if (s && s.v) { Object.assign(ST.v, s.v); Object.assign(ST.seen, s.seen || {}); Object.assign(ST.pour, s.pour || {}); } } catch (e) { }
+const save = () => { try { localStorage.setItem('gwbank_b2', JSON.stringify({ v: ST.v, seen: ST.seen, pour: ST.pour })); } catch (e) { } };
+
+let renderer, camera, controls, clock = new THREE.Clock(), fan, FACTS, envTex;
+const SC = {}, LBL = { ch: [], yl: [], wx: [] }, BLK = {}, U = { time: 0 }, CAM = {};
+let nearReady;
+
+init().catch(err => { console.error(err); document.querySelector('#loading div').textContent = '載入失敗，請重新整理（' + err.message + '）'; });
+
+async function init() {
+  renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2)); renderer.setSize(innerWidth, innerHeight);
+  renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 0.9;
+  $('app').appendChild(renderer.domElement);
+  camera = new THREE.PerspectiveCamera(40, innerWidth / innerHeight, 50, 300000);
+  controls = new OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true; controls.dampingFactor = 0.08; controls.maxPolarAngle = Math.PI * 0.49; controls.screenSpacePanning = false;
+  addEventListener('resize', () => { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); });
+  for (const k of ['ch', 'yl', 'wx']) {
+    const s = new THREE.Scene(); s.background = new THREE.Color(0xd5e4ef);
+    const sun = new THREE.DirectionalLight(0xfff1dd, 2.3); sun.position.set(-350, 800, 450); s.add(sun, new THREE.HemisphereLight(0xcfe3ff, 0x6b5a3e, 0.7)); SC[k] = s;
+  }
+  const [f, facts, hdr] = await Promise.all([loadFan('ch', { vex: VEX, seaSeed: [0, 0] }), fetch(DATA + 'facts_charts.json').then(r => r.json()), new RGBELoader().loadAsync('assets/hdri/sky_1k.hdr')]);
+  fan = f; FACTS = facts; hdr.mapping = THREE.EquirectangularReflectionMapping;
+  const pm = new THREE.PMREMGenerator(renderer); envTex = pm.fromEquirectangular(hdr).texture; pm.dispose(); for (const k in SC) SC[k].environment = envTex;
+  buildCh(); buildBases();
+  nearReady = Promise.all([buildNear('yl', 'A'), buildNear('wx', 'B')]);
+  setupUI(); renderAll();
+  const q = new URLSearchParams(location.search);
+  goSite('all', 0); say('start');
+  const ld = $('loading'); ld.classList.add('done'); setTimeout(() => ld.remove(), 700);
+  renderer.setAnimationLoop(frame);
+  if (q.get('site')) goSite(q.get('site'), 0); else if (!done()) $('introBox').classList.add('open');
+  window.__b2 = { ST, SITES, BLK, goSite, toggleSec, pour, setV, openReveal, flyTo, camera, controls, fan, ff: (s = 20) => { for (let i = 0; i < s * 10; i++) stepPour(ST.site, 0.1); } };   // 除錯用
+}
+
+/* =====================================================================
+   彰化全景（ch）
+   ===================================================================== */
+function buildCh() {
+  const s = SC.ch; s.add(fan.group); fan.skirt(1800);
+  fan.lines(l => l.kind === 'river' && /濁水溪|東螺溪|舊濁水溪/.test(l.name || ''), { color: 0x38bdf8, width: 170, dy: 14 });
+  fan.lines(l => l.kind === 'canal' && /八堡|莿仔埤/.test(l.name || ''), { color: 0xe11d48, width: 90, dy: 16, opacity: 0.85 });
+  fan.lines(l => l.kind === 'hsr', { color: 0xf97316, width: 110, dy: 18, opacity: 0.9 });
+  // 丙：濁水溪河床上，靠近扇頂的一點
+  const river = fan.linePts(l => l.kind === 'river' && l.name === '濁水溪').flat();
+  let best = [33500, 24600], bd = 1e18; for (const p of river) { const d = Math.abs(p[0] - 33500); if (d < bd) { bd = d; best = p; } }
+  SITES.C.c = best;
+  const A = fan.fromTM2(207000, 2651950), B = fan.fromTM2(191210, 2646170); SITES.A.ch = A; SITES.B.ch = B; SITES.C.ch = best;
+  for (const k of ['A', 'B', 'C']) {
+    const S = SITES[k], p = S.ch;
+    const ring = new THREE.Mesh(new THREE.RingGeometry(520, 760, 40), new THREE.MeshBasicMaterial({ color: S.color, transparent: true, opacity: 0.9, depthWrite: false, side: THREE.DoubleSide }));
+    ring.rotation.x = -Math.PI / 2; ring.position.copy(fan.P(p[0], p[1], 40)); ring.renderOrder = 4; s.add(ring); S.ring = ring;
+    addLabel('ch', `<b>${S.tag}</b>${S.name}`, 'pin', fan.P(p[0], p[1], 900), () => goSite(k), S.color);
+  }
+  const g = (n, t, dy = 500, cls = 'geo') => { const p = fan.place(n); if (p) addLabel('ch', t || n.replace(/[鄉鎮市]$/, ''), cls, fan.P(p[0], p[1], dy)); };
+  g('溪州鄉'); g('二水鄉'); g('溪湖鎮'); g('埤頭鄉'); g('二林鎮'); g('員林市'); g('北斗鎮'); g('芳苑鄉');
+  addLabel('ch', '八卦台地', 'geo', fan.P(38600, 13500, 700));
+  addLabel('ch', '濁水溪', 'geo water', fan.P(19000, 22300, 500));
+  addLabel('ch', '臺灣海峽', 'geo water', fan.P(2500, 6000, 500));
+  addLabel('ch', '扇頂', 'geo canal', fan.P(36600, 22000, 1500));
+  addLabel('ch', '扇尾', 'geo canal', fan.P(9500, 15500, 900));
+  addLabel('ch', '高鐵', 'geo', fan.P(27500, 20300, 500));
+  addLabel('ch', '八堡圳', 'geo canal', fan.P(32500, 15300, 500));
+}
+
+/* =====================================================================
+   近景（yl、wx）：平面＋正射影像
+   ===================================================================== */
+async function buildNear(name, key) {
+  const meta = await fetch(DATA + `meta_${name}.json`).then(r => r.json());
+  const tex = await new Promise((res, rej) => new THREE.TextureLoader().load(DATA + `ortho_${name}.jpg`, t => { t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 16; res(t); }, undefined, rej));
+  const W = meta.x1 - meta.x0, D = meta.y1 - meta.y0, S = SITES[key];
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(W, D), new THREE.MeshBasicMaterial({ map: tex })); m.rotation.x = -Math.PI / 2; SC[name].add(m);
+  const base = new THREE.Mesh(new THREE.BoxGeometry(W, 60, D), new THREE.MeshStandardMaterial({ color: 0x7c705f, roughness: 1 })); base.position.y = -30.5; SC[name].add(base);
+  S.W = W; S.D = D; S.tex = tex; S.P = (lx, lz, y = 0) => new THREE.Vector3(lx - W / 2, y, lz - D / 2);
+  makeBlock(key, SC[name], S.P(S.c[0], S.c[1]), tex, W, D);
+  addLabel(name, `<b>${S.tag}</b>${S.name}`, 'pin', S.P(S.c[0], S.c[1], S.blk.h * 0.25), () => openPanel('site' + key), S.color);
+  if (key === 'A') {
+    addLabel('yl', '池底：平時是草坪', 'geo', S.P(805, 800, 12));
+    addLabel('yl', '員林市區', 'geo', S.P(560, 1150, 20)); addLabel('yl', '農田', 'geo', S.P(1300, 520, 20));
+  } else {
+    addLabel('wx', '水面上是浮力式太陽能板', 'geo', S.P(1150, 1180, 30));
+    addLabel('wx', '農田', 'geo', S.P(330, 1250, 30)); addLabel('wx', '聚落', 'geo', S.P(900, 1830, 30));
+  }
+}
+
+/* =====================================================================
+   地底剖面地塊（側面是動態畫布）
+   ===================================================================== */
+function buildBases() { for (const k in SITES) SITES[k].base = drawBase(SITES[k]); }
+function typeAt(S, x, y) {
+  for (const L of S.layers) if (y >= L[1] && y < L[2]) { if (L[0] === 'clay' && L[3] && x > L[3][0] && x < L[3][1]) return 'mix'; return L[0]; }
+  return y < G0 ? 'air' : 'base';
+}
+function drawBase(S) {
+  const cv = document.createElement('canvas'); cv.width = SW; cv.height = SH; const x = cv.getContext('2d'), r = rng(S.tag.charCodeAt(0));
+  const BG = { gravel: '#8a8172', mix: '#978b70', sand: '#bba97d', clay: '#6b4b34', soil: '#6a5a3c', base: '#4b3a2c' };
+  x.fillStyle = '#e8eef2'; x.fillRect(0, 0, SW, G0);
+  for (const [t, y0, y1, gap] of S.layers) {
+    x.fillStyle = BG[t]; x.fillRect(0, y0, SW, y1 - y0);
+    if (t === 'gravel') for (let i = 0; i < 2300; i++) { const px = r() * SW, py = y0 + r() * (y1 - y0), s = 5 + r() * r() * 24, g = 122 + r() * 88 | 0; x.fillStyle = `rgb(${g},${g - 6},${g - 16})`; x.beginPath(); x.ellipse(px, py, s, s * (0.55 + r() * 0.3), r() * 3.14, 0, 6.283); x.fill(); x.strokeStyle = 'rgba(40,34,26,.5)'; x.lineWidth = 1.3; x.stroke(); }
+    if (t === 'mix') { for (let i = 0; i < 520; i++) { const px = r() * SW, py = y0 + 4 + r() * (y1 - y0 - 8), s = 3 + r() * r() * 11, g = 130 + r() * 70 | 0; x.fillStyle = `rgb(${g},${g - 6},${g - 20})`; x.beginPath(); x.ellipse(px, py, s, s * 0.65, r() * 3.14, 0, 6.283); x.fill(); }
+      x.fillStyle = 'rgba(107,75,52,.85)'; for (let i = 0; i < 7; i++) { const px = r() * SW, py = y0 + 14 + r() * (y1 - y0 - 28); x.beginPath(); x.ellipse(px, py, 60 + r() * 70, 5 + r() * 4, 0, 0, 6.283); x.fill(); } }
+    if (t === 'sand') for (let i = 0; i < 1500; i++) { x.fillStyle = `rgba(${90 + r() * 60 | 0},${75 + r() * 40 | 0},40,.55)`; x.fillRect(r() * SW, y0 + r() * (y1 - y0), 2, 2); }
+    if (t === 'clay') { x.strokeStyle = 'rgba(255,255,255,.13)'; x.lineWidth = 1.5; for (let yy = y0 + 6; yy < y1 - 2; yy += 8) { x.beginPath(); x.moveTo(0, yy); x.lineTo(SW, yy + (r() - 0.5) * 3); x.stroke(); }
+      if (gap) { x.fillStyle = BG.mix; x.fillRect(gap[0], y0, gap[1] - gap[0], y1 - y0); for (let i = 0; i < 40; i++) { const g = 130 + r() * 70 | 0; x.fillStyle = `rgb(${g},${g - 6},${g - 20})`; x.beginPath(); x.ellipse(gap[0] + 6 + r() * (gap[1] - gap[0] - 12), y0 + r() * (y1 - y0), 5, 3.5, 0, 0, 6.283); x.fill(); } } }
+    if (t === 'soil') { x.fillStyle = '#5d8a3a'; x.fillRect(0, y0, SW, 7); }
+  }
+  // 池子／河床的凹槽
+  x.fillStyle = '#e8eef2'; x.beginPath(); x.moveTo(170, G0 - 1); x.lineTo(205, G0 + 16); x.lineTo(815, G0 + 16); x.lineTo(850, G0 - 1); x.closePath(); x.fill();
+  x.fillStyle = '#cbd5e1'; x.fillRect(0, G0 - 3, 170, 3); x.fillRect(850, G0 - 3, SW - 850, 3);
+  return cv;
+}
+function makeBlock(key, scene, top, tex, W, D) {
+  const S = SITES[key], b = S.blk, cv = document.createElement('canvas'); cv.width = SW; cv.height = SH;
+  const ct = new THREE.CanvasTexture(cv); ct.colorSpace = THREE.SRGBColorSpace; ct.anisotropy = 8;
+  const side = new THREE.MeshBasicMaterial({ map: ct }), tt = tex.clone(); tt.needsUpdate = true;
+  tt.repeat.set(b.w / W, b.d / D); tt.offset.set((S.c[0] - b.w / 2) / W, 1 - (S.c[1] + b.d / 2) / D);
+  const mesh = new THREE.Mesh(new THREE.BoxGeometry(b.w, b.h, b.d), [side, side, new THREE.MeshBasicMaterial({ map: tt }), new THREE.MeshBasicMaterial({ color: 0x3b4a5a }), side, side]);
+  mesh.position.set(top.x, 0, top.z); mesh.visible = false; mesh.renderOrder = 5; scene.add(mesh);
+  BLK[key] = { mesh, cv, ctx: cv.getContext('2d'), tex: ct, top, drops: [], last: 0, P: null };
+}
+function drawSection(key) {
+  const S = SITES[key], B = BLK[key], x = B.ctx, P = B.P; x.drawImage(S.base, 0, 0);
+  // 含水層裡的水
+  for (const [t, y0, y1] of S.layers) if (t !== 'clay' && t !== 'base' && t !== 'soil' && y1 > S.wt) { x.fillStyle = 'rgba(40,125,215,.36)'; x.fillRect(0, Math.max(y0, S.wt), SW, y1 - Math.max(y0, S.wt)); }
+  for (const L of S.layers) if (L[0] === 'clay' && L[3] && L[1] > S.wt) { x.fillStyle = 'rgba(40,125,215,.36)'; x.fillRect(L[3][0], L[1], L[3][1] - L[3][0], L[2] - L[1]); }
+  x.strokeStyle = '#7dd3fc'; x.lineWidth = 4; x.setLineDash([16, 10]); x.beginPath(); x.moveTo(0, S.wt); x.lineTo(SW, S.wt); x.stroke(); x.setLineDash([]);
+  // 池水（倒水實驗時）
+  const lvl = P ? clamp(P.pond, 0, 1) : 0;
+  if (lvl > 0.02) { x.fillStyle = 'rgba(47,143,190,.9)'; const h = 6 + lvl * 34; x.beginPath(); x.moveTo(205 - (h - 16) * 2.2, G0 + 16 - h); x.lineTo(205, G0 + 16); x.lineTo(815, G0 + 16); x.lineTo(815 + (h - 16) * 2.2, G0 + 16 - h); x.closePath(); x.fill(); }
+  // 深井與被壓縮的地層
+  if (S.well) {
+    const y2 = S.layers[3][1], y3 = S.layers[5][2];
+    x.fillStyle = 'rgba(15,23,42,.8)'; x.fillRect(930, G0 - 26, 12, y3 - G0 + 14); x.fillStyle = '#f97316'; x.fillRect(922, G0 - 34, 28, 10);
+    x.strokeStyle = 'rgba(249,115,22,.95)'; x.lineWidth = 4; x.setLineDash([10, 7]); x.strokeRect(6, y2 + 3, SW - 12, y3 - y2 - 6); x.setLineDash([]);
+    const ph = (U.time * 0.6) % 1; x.fillStyle = '#fdba74'; for (const yy of [S.aq[1][0], S.aq[2][0]]) for (let k = 0; k < 3; k++) { const px = 905 - ((ph + k / 3) % 1) * 90; x.beginPath(); x.moveTo(px + 12, yy); x.lineTo(px, yy - 7); x.lineTo(px, yy + 7); x.fill(); }
+  }
+  // 水滴
+  for (const d of B.drops) { x.globalAlpha = d.a; x.fillStyle = d.f === 2 ? '#c4b5fd' : d.f === 0 ? '#93c5fd' : '#e0f2fe'; x.strokeStyle = 'rgba(15,23,42,.6)'; x.lineWidth = 1.6; x.beginPath(); x.ellipse(d.x, d.y, 5, 7.5, 0, 0, 6.283); x.fill(); x.stroke(); }
+  x.globalAlpha = 1;
+  // 文字
+  x.font = '900 27px "Noto Sans TC","Microsoft JhengHei",sans-serif'; x.textBaseline = 'middle';
+  const tag = (t, tx, ty, bg) => { const w = x.measureText(t).width + 22; x.fillStyle = bg; x.beginPath(); x.roundRect(tx, ty - 20, w, 40, 11); x.fill(); x.fillStyle = '#fff'; x.fillText(t, tx + 11, ty + 1); };
+  tag(S.top, 16, 34, 'rgba(13,34,56,.8)');
+  tag(S.topTxt, 16, S.topY, 'rgba(13,34,56,.8)');
+  tag('▼ 地下水面', 700, S.wt - 24, 'rgba(2,132,199,.92)');
+  for (const [yy, t] of S.aq) tag(t, 16, yy, 'rgba(2,132,199,.85)');
+  for (const [yy, tx] of S.cl) tag('黏土阻水層', tx, yy, 'rgba(75,50,30,.92)');
+  if (S.well) { tag('深井', 868, 22, 'rgba(194,65,12,.95)'); tag('被抽水、被壓縮的地層', 300, S.aq[1][0] + 4, 'rgba(194,65,12,.95)'); }
+  else { tag('往下、往下游都通', 16, 330, 'rgba(2,132,199,.85)'); tag('← 往下游（溪州、埤頭）', 16, 470, 'rgba(13,34,56,.8)'); }
+  x.font = '700 19px "Noto Sans TC",sans-serif'; x.fillStyle = 'rgba(255,255,255,.92)'; x.fillText(S.well ? '示意圖：依一般地層特性畫的，不是鑽探資料；深度誇大' : '示意圖：深度誇大', 16, SH - 16);
+  B.tex.needsUpdate = true;
+}
+
+/* ---------- 倒水實驗（示意） ---------- */
+function pour() {
+  const k = ST.site; if (k === 'all') return; const S = SITES[k], B = BLK[k], r = rng(7 + k.charCodeAt(0)), N = 60;
+  if (ST.lift < 0.5) toggleSec(true);
+  B.drops = []; const n0 = Math.round(S.fate[0] * N), n2 = Math.round(S.fate[2] * N);
+  const aq1 = S.layers.find(L => L[0] !== 'clay' && L[0] !== 'soil' && L[2] > S.wt), deepL = S.layers.filter(L => L[0] === 'sand').slice(-2), gap = (S.layers.find(L => L[3]) || [])[3];
+  for (let i = 0; i < N; i++) {
+    const f = i < n0 ? 0 : i < n0 + n2 ? 2 : 1, d = { f, x: 225 + r() * 570, y: G0 - 4 - r() * 26, a: 1, t0: 0.3 + r() * 3.2, done: false, sy: 0, drift: 0 };
+    if (f === 0) d.sy = S.layers[0][0] === 'clay' ? G0 + 22 + r() * (S.layers[0][2] - G0 - 30) : G0 + 6 + r() * 8;
+    else if (f === 1) d.sy = S.wt + 10 + r() * (Math.min(aq1[2], S.wt + 150) - S.wt - 18);
+    else if (deepL.length) { const L = deepL[r() * deepL.length | 0]; d.sy = L[1] + 12 + r() * (L[2] - L[1] - 24); if (gap) d.gx = gap[0] + 14 + r() * (gap[1] - gap[0] - 28); }
+    else d.sy = 380 + r() * 160;
+    B.drops.push(d);
+  }
+  B.P = { t: 0, pond: 1, tWT: null, done: false }; say('pour' + k); $('btnPour').disabled = true;
+}
+function stepPour(key, dt) {
+  const S = SITES[key], B = BLK[key], P = B.P; if (!P || P.done) return;
+  P.t += dt; let left = 0, moving = 0;
+  for (const d of B.drops) {
+    if (P.t < d.t0) { left++; moving++; continue; }
+    if (d.done) { if (key === 'C' && d.f) { d.x -= 26 * dt; if (d.x < 20) d.a = Math.max(0, d.a - dt * 2); } continue; }
+    moving++;
+    const t = d.y < G0 + 16 ? 'pond' : typeAt(S, d.x, d.y);
+    let v = t === 'pond' ? 70 : SPEED[t] ?? 60; if (d.f === 0 && d.y > G0 + 16) v = Math.min(v, 9);
+    if (d.gx !== undefined && d.y > S.wt - 30 && d.y < S.layers[3][1]) { d.x += clamp(d.gx - d.x, -1, 1) * 150 * dt; if (Math.abs(d.gx - d.x) > 6 && d.y > S.layers[2][1] - 10) v = 0; }
+    d.y += v * dt;
+    if (P.tWT === null && d.f && d.y >= S.wt) P.tWT = P.t;
+    if (d.y >= d.sy) { d.y = d.sy; d.done = true; }
+  }
+  P.pond = left / B.drops.length + 0.02 * (moving > 0 ? 1 : 0);
+  const limit = key === 'B' ? 15 : 11;
+  if (!moving || P.t > limit) {
+    P.done = true; const n = B.drops.length, c = [0, 0, 0]; for (const d of B.drops) c[d.f]++;
+    ST.pour[key] = { s: Math.round(c[0] / n * 100), m: Math.round(c[1] / n * 100), d: Math.round(c[2] / n * 100), t: P.tWT ? +P.tWT.toFixed(1) : null };
+    ST.seen[key][0] = ST.seen[key][1] = 1; save(); renderAll(); say('poured' + key); $('btnPour').disabled = false;
+  }
+}
+
+function toggleSec(on) {
+  const k = ST.site; if (k === 'all') return; on = on === undefined ? ST.lift < 0.5 : on;
+  const B = BLK[k]; if (!B) return; B.mesh.visible = true;
+  gsap.killTweensOf(ST); gsap.to(ST, { lift: on ? 1 : 0, duration: 1.5, ease: 'power2.inOut', onComplete: () => { if (!on) B.mesh.visible = false; } });
+  $('btnSec').classList.toggle('on', on); $('btnSec').firstChild.textContent = on ? '把這一塊放回去' : '切一塊地底起來看';
+  flyTo(on ? 'sec' : k); if (on && !(B.P && !B.P.done)) say('sec' + k);
+}
+
+/* =====================================================================
+   切換地點／視角
+   ===================================================================== */
+function siteTop(k) { const S = SITES[k]; return S.scene === 'ch' ? fan.P(S.c[0], S.c[1]) : S.P(S.c[0], S.c[1]); }
+function viewDef(v) {
+  if (v === 'all') return { t: new THREE.Vector3(1500, 0, 1500), p: new THREE.Vector3(1500, 27000, 33000) };
+  if (v === 'sec') { const k = ST.site, b = SITES[k].blk, t = siteTop(k); t.y += 26 + b.h * 0.52; return { t, p: t.clone().add(new THREE.Vector3(b.w * 0.2, b.h * 0.35, b.w * clamp(2450 / innerWidth, 1.9, 3) + b.d / 2)) }; }
+  const b = SITES[v].blk, t = siteTop(v); return { t, p: t.clone().add(new THREE.Vector3(b.w * 0.25, b.w * 1.5, b.w * 1.9)) };
+}
+function flyTo(v, dur = 1.5) {
+  document.querySelectorAll('.vw').forEach(b => b.classList.toggle('active', b.dataset.v === v));
+  const d = viewDef(v); gsap.killTweensOf(camera.position); gsap.killTweensOf(controls.target);
+  if (!dur) { camera.position.copy(d.p); controls.target.copy(d.t); controls.update(); return; }
+  gsap.to(camera.position, { x: d.p.x, y: d.p.y, z: d.p.z, duration: dur, ease: 'power2.inOut' });
+  gsap.to(controls.target, { x: d.t.x, y: d.t.y, z: d.t.z, duration: dur, ease: 'power2.inOut', onUpdate: () => controls.update() });
+}
+async function goSite(k, dur = 1.5) {
+  if (!SITES[k] && k !== 'all') return;
+  if (k !== 'all' && SITES[k].scene !== 'ch') await nearReady;
+  if (k === 'C' && !BLK.C) makeBlock('C', SC.ch, fan.P(SITES.C.c[0], SITES.C.c[1]), fan.tex, fan.W, fan.D);
+  // 換地點：把上一個地點的地塊收起來
+  gsap.killTweensOf(ST); ST.lift = 0; for (const b in BLK) BLK[b].mesh.visible = false;
+  $('btnSec').classList.remove('on'); $('btnSec').firstChild.textContent = '切一塊地底起來看';
+  const scene = k === 'all' ? 'ch' : SITES[k].scene, changed = scene !== ST.scene;
+  ST.site = k; ST.scene = scene;
+  for (const s in LBL) if (s !== scene) LBL[s].forEach(L => L.el.classList.add('hide'));
+  const near = scene !== 'ch'; camera.near = near ? 2 : 50; camera.far = near ? 30000 : 300000; camera.updateProjectionMatrix();
+  controls.minDistance = near ? 60 : 1500; controls.maxDistance = near ? 5000 : 90000;
+  document.querySelectorAll('#siteOpts .opt').forEach(b => b.classList.toggle('on', b.dataset.site === k));
+  $('btnSec').disabled = $('btnPour').disabled = k === 'all';
+  $('modeTag').textContent = k === 'all' ? '彰化全景（高度誇大 3 倍）' : `${SITES[k].tag}｜${SITES[k].name}` + (k === 'C' ? '（高度誇大 3 倍）' : '');
+  flyTo(k, changed ? 0 : dur); say(k === 'all' ? 'start' : 'site' + k); renderAll();
+}
+
+/* ---------- 標籤 ---------- */
+function addLabel(scene, html, cls, pos, onClick, color) {
+  const div = document.createElement('div'); div.className = 'lbl hide'; div.innerHTML = `<div class="${cls}">${html}</div>`;
+  if (color) div.firstChild.style.setProperty('--c', color);
+  if (onClick) div.firstChild.addEventListener('click', onClick);
+  $('labels').appendChild(div); LBL[scene].push({ el: div, pos });
+}
+
+/* =====================================================================
+   檢核表
+   ===================================================================== */
+const done = () => ['A', 'B', 'C'].reduce((n, k) => n + ST.v[k].filter(v => v != null).length, 0);
+function setV(k, i, v) { ST.v[k][i] = v; save(); renderAll(); if (done() === 12) say('all'); }
+function renderAll() {
+  const k = ST.site, n = done();
+  // 條件卡
+  let got = new Set(); try { got = new Set(JSON.parse(localStorage.getItem('gwbank_cards') || '[]')); } catch (e) { }
+  $('chips').innerHTML = '我的條件卡' + [1, 2, 3, 4].map(i => `<i class="${got.has(i) ? '' : 'no'}">${i}</i>`).join('') + '<button id="btnCards">看卡片</button>';
+  $('btnCards').onclick = showCards;
+  $('rSite').textContent = k === 'all' ? '先選一個地點' : `${SITES[k].tag}｜${SITES[k].name}`; $('rDone').textContent = `${n}／12`;
+  $('resMini').textContent = `${n}／12`; $('cfgMini').textContent = k === 'all' ? '全景' : SITES[k].tag; $('revTip').textContent = `已檢驗 ${n}／12 格`;
+  $('chk').innerHTML = k === 'all' ? '<div class="crow"><div class="fb" style="font-size:14px;margin:0">在地圖上點「甲、乙、丙」，或用左邊的按鈕選一個地點，用四個條件一項一項檢驗。</div></div>' : CONDS.map((c, i) => {
+    const v = ST.v[k][i], ok = ST.seen[k][i], ref = REF[k][i];
+    return `<div class="crow"><div class="ct"><span class="n">${i + 1}</span>${c.t}<button class="ev" data-ev="${i}">看證據</button></div>
+      <div class="cb">${[2, 1, 0].map(q => `<button class="vb v${q}${v === q ? ' on' : ''}" data-c="${i}" data-k="${q}" ${ok ? '' : 'disabled'}>${VL[q]}</button>`).join('')}</div>
+      ${v != null ? `<div class="fb ${v === ref ? 'same' : 'diff'}"><span class="tag">參考看法 ${VS[ref]}</span>${v === ref ? '和你的看法一樣。' : '和你的看法不一樣，再看一次證據，說說你的理由。'}${FB[k][i]}</div>` : ok ? '' : `<div class="fb lock">${i < 2 ? '先做「倒水實驗」，才能判斷。' : '先按「看證據」。'}</div>`}</div>`;
+  }).join('');
+  $('pourTable').innerHTML = '<tr><th>地點</th><th>到地下水面</th><th>留在地表</th><th>淺層</th><th>深層</th></tr>' + ['A', 'B', 'C'].map(s => { const p = ST.pour[s]; return `<tr><td>${SITES[s].tag} ${SITES[s].short}</td>` + (p ? `<td>${p.t ? p.t + ' 秒' : '–'}</td><td>${p.s}%</td><td>${p.m}%</td><td>${p.d}%</td>` : '<td>–</td><td>–</td><td>–</td><td>–</td>') + '</tr>'; }).join('');
+  $('mx').innerHTML = '<tr><th>條件</th>' + ['A', 'B', 'C'].map(s => `<th class="site" data-go="${s}">${SITES[s].tag}</th>`).join('') + '</tr>' +
+    CONDS.map((c, i) => `<tr><td>${'①②③④'[i]} ${['地層', '到得了', '水源', '空間維護'][i]}</td>` + ['A', 'B', 'C'].map(s => { const v = ST.v[s][i]; return `<td class="k${v ?? 'n'}">${v == null ? '・' : VS[v]}</td>`; }).join('') + '</tr>').join('');
+}
+const CARDS = [
+  { n: 1, t: '地層要透水', from: 'A2「沖積扇的地底祕密」', d: '扇頂是一整層卵礫石，石頭之間的孔隙大，水滲得快；越往海邊顆粒越細，還夾著黏土，水就很難滲下去。' },
+  { n: 2, t: '水要到得了需要的含水層', from: 'A5「補注水丘與成效」', d: '在扇頂補注，水可以流到下游的含水層。但是大部分留在淺層，進到深層的很少；離得越遠，幫助越小。' },
+  { n: 3, t: '水要夠多、夠乾淨', from: 'A4「沉澱與入滲」', d: '泥水直接灌進去，細泥會把石頭之間的孔隙塞住。所以要先讓水慢下來，泥沙沉澱了再入滲。' },
+  { n: 4, t: '要有空間，還要長期維護', from: 'A4「沉澱與入滲」', d: '池底的淤泥會越積越厚，要趁枯水期刮掉。蓋好不是結束，要一直照顧，才能一直存水。' },
+];
+function showCards() {
+  let got = new Set(); try { got = new Set(JSON.parse(localStorage.getItem('gwbank_cards') || '[]')); } catch (e) { }
+  $('condCards').innerHTML = CARDS.map(c => `<div class="c${got.has(c.n) ? '' : ' lock'}"><span class="n">${c.n}</span><h4>${c.t}</h4><p>${c.d}</p>${got.has(c.n) ? '' : `<p style="font-size:12.5px">（這張卡還沒領：可以回 ${c.from}領。沒領也可以先用。）</p>`}</div>`).join('');
+  $('condBox').classList.add('open');
+}
+
+/* ---------- 下方提示列 ---------- */
+const MSG = {
+  start: ['info', '這是濁水溪沖積扇的彰化這一邊。<b>任務：</b>用屏東學到的「補注四條件」，檢驗三個地點適不適合當地下水銀行。先選一個地點（甲、乙、丙）。'],
+  siteA: ['info', '<b>甲｜圓林園滯洪池</b>在員林市區，是公園也是滯洪池，池底平時是草坪。按「倒水實驗」，再用右邊的檢核表一項一項檢驗。'],
+  siteB: ['info', '<b>乙｜萬興滯洪池</b>在二林，靠近海邊的扇尾，四周是農田，水面上有太陽能板。按「倒水實驗」，再用檢核表檢驗。'],
+  siteC: ['info', '<b>丙｜濁水溪扇頂河床</b>在二水到溪州之間。水利署已經在濁水溪的河床做補注。按「倒水實驗」，和甲、乙比一比。'],
+  secA: ['info', '這是把圓林園切一塊抬起來的樣子（示意）。橘色虛線框起來的，是被深井抽水、被壓縮的地層。按「倒水實驗」，看水滴停在哪裡。'],
+  secB: ['info', '這是把萬興滯洪池切一塊抬起來的樣子（示意）。扇尾的黏土一層又一層。按「倒水實驗」，看水滴停在哪裡。'],
+  secC: ['info', '這是把扇頂的河床切一塊抬起來的樣子（示意）。整層都是卵礫石。按「倒水實驗」，看水滴跑多快。'],
+  pourA: ['info', '倒水了！看水滴：穿過砂礫層的速度快不快？碰到黏土層會怎樣？有沒有水滴從黏土層的缺口漏下去？'],
+  pourB: ['info', '倒水了！池底是很細的黏土和粉砂。水滴動得快不快？有多少還留在上面？'],
+  pourC: ['info', '倒水了！卵礫石的孔隙很大。水滴多久就到地下水面？到了以後往哪裡流？'],
+  pouredA: ['good', '實驗完成（示意）。大部分的水停在第 1 含水層，只有一點點從黏土層的缺口漏到更深的地方。現在可以回答檢核表的 ①、②。'],
+  pouredB: ['good', '實驗完成（示意）。水滲得很慢，超過一半還留在地表和黏土裡，幾乎到不了深層。現在可以回答檢核表的 ①、②。'],
+  pouredC: ['good', '實驗完成（示意）。水很快就到地下水面，再往下游流。不過進到深處的還是少數。現在可以回答檢核表的 ①、②。'],
+  all: ['good', '<b>12 格都檢驗完了！</b>三個地點哪裡最適合？滯洪池是不是完全沒用？按左邊的「揭曉」。'],
+};
+function say(k) { const [type, html] = MSG[k], el = $('rule'); el.className = 'glass ' + (type === 'info' ? '' : type); $('ruleTxt').innerHTML = html; }
+
+/* =====================================================================
+   說明卡（內容與出處見 事實核實表_v3.md）
+   ===================================================================== */
+const SRC = {
+  wra114: '經濟部水利署〈114 年度地層下陷檢測結果說明〉（115.03.16）。', wra106: '經濟部水利署《106 年度臺灣地區地層下陷概況說明摘要報告》。',
+  yl: '《變更員林都市計畫主要計畫書》（108.01）第四章。', cgs: '黃智昭（2014）〈地下水補注地質敏感區〉，《地質》33(2)；賴慈華、黃智昭（2007）。',
+  e418: '經濟部水利署電子報第 418 期（110.01.15）。', ting: '丁澈士等（2021）《土木水利》第 48 卷第 6 期，頁 50。',
+  chang: '張紹峰（2021）〈濁水溪沖積扇之地層下陷整治策略探討〉，成功大學水利及海洋工程學系碩士論文。',
+  ey: '行政院《雲彰地區地層下陷具體解決方案暨行動計畫（核定本）》（100.08）。', map: '位置：依國土測繪中心正射影像與 OpenStreetMap。',
+};
+const sketch = '<div class="src">地底剖面是依這個位置的一般地層特性畫的示意圖，不是這座池子的鑽探資料；倒水實驗的速度和比例是示意。</div>';
+const INFO = {
+  station: { t: '本站重點：三個地點的補注檢驗', s: '用證據回答：哪裡補得有效？哪裡效果有限？', b: `
+    <p>屏東的大潮州人工湖蓋在扇頂，那裡剛好四個條件都不錯。彰化的滯洪池不是為了補注蓋的，位置也不在扇頂。能不能當地下水銀行，要<b>一個條件一個條件檢驗</b>。</p>
+    <div class="keys"><span>① 地層</span><span>池底下是礫石、砂，還是黏土？</span><span>② 到得了</span><span>水能不能到被抽水、被壓縮的那幾層？</span><span>③ 水源</span><span>水從哪裡來？夠不夠？乾不乾淨？</span><span>④ 空間維護</span><span>滯洪池要先空著等大雨，補注卻要把水留久一點，怎麼兼顧？</span></div>
+    <div class="box2 observe"><b>👀 畫面觀察</b>三個地點都做一次倒水實驗。比一比：水滴到地下水面要多久？最後停在哪一層？</div>
+    <div class="box2 think"><b>💡 想一想 1</b>三個地點裡，哪一個最像屏東的大潮州人工湖？為什麼？
+      <details><summary>看參考答案</summary><p>丙（濁水溪扇頂河床）。它和大潮州一樣在扇頂，地底以礫石為主，水滲得快，水源也多。</p></details></div>
+    <div class="box2 think"><b>💡 想一想 2</b>彰化的下陷，主要是第二、第三含水層被壓縮。在扇尾的池子補注，為什麼幫不太到這幾層？
+      <details><summary>看參考答案</summary><p>扇尾的地底有一層一層的黏土。從地面滲下去的水，大多停在最上面的含水層，被黏土擋住，很難再往下。</p></details></div>
+    <div class="box2 think"><b>💡 想一想 3</b>滯洪池「要先空著等大雨」，補注卻要「把水留久一點」。有沒有辦法兩個都做到？
+      <details><summary>看參考答案</summary><p>可以想辦法：例如大雨來之前先把水放掉，雨停以後不要馬上排光，讓水慢慢滲下去。下一站 B3 會讓你自己設計。</p></details></div>
+    <div class="src">${SRC.wra106}<br>${SRC.cgs}<br>${SRC.yl}<br>單位：出處有的用「立方公尺」、有的用「噸」；1 噸的水大約是 1 立方公尺。<br>地底剖面和倒水實驗是教學示意。</div>` },
+  siteA: { t: '甲｜圓林園滯洪池', s: '員林市・公園兼滯洪池', b: `
+    <p>圓林園在員林市區，平常是公園，池底是草坪。下大雨的時候，雨水流進來暫時存著，等雨停了再慢慢排掉，市區就比較不會淹水。</p>
+    <div class="keys"><span>面積</span><span>2.53 公頃（池頂約 1.72 公頃、池底約 1.3 公頃）</span><span>滯洪量</span><span>31,490 立方公尺</span><span>啟用</span><span>民國 107 年 1 月</span><span>目的</span><span>防洪滯洪＋休憩</span></div>
+    <div class="src">${SRC.yl}<br>${SRC.map}</div>` },
+  siteB: { t: '乙｜萬興滯洪池', s: '二林鎮・扇尾的滯洪池', b: `
+    <p>萬興滯洪池在二林鎮的台糖萬興農場，位在沖積扇的扇尾，四周是農田。大雨時把排水暫時存起來，減少淹水。水面上設了浮力式的太陽能板。</p>
+    <div class="keys"><span>注意</span><span>它的面積和能裝多少水，目前查不到公開的官方數字，所以這裡不寫。</span></div>
+    <div class="src">位置與太陽能：媒體報導（數位時代）；${SRC.map}</div>` },
+  siteC: { t: '丙｜濁水溪扇頂河床', s: '二水到溪州之間・已經在做河槽補注', b: `
+    <p>濁水溪從山裡流出來，在二水一帶展開成沖積扇。扇頂的地底以礫石為主，是地下水最主要的入口。</p>
+    <div class="keys"><span>敏感區</span><span>民國 103 年公告「地下水補注地質敏感區」194.8 平方公里。這一區每年補注約 4.16 億噸，約占全區補注量的 31.7%。</span>
+      <span>河槽補注</span><span>水利署參考這個敏感區，在濁水溪的河床上蓄水，讓水滲下去。109 年南岸的蓄水區，每年大約可以入滲 1,000 萬噸。</span>
+      <span>報導</span><span>報導引述水利署：民國 100 到 104 年，河槽補注累積約 1.3 億噸。</span></div>
+    <div class="src">${SRC.cgs}<br>${SRC.e418}<br>公視、TVBS 報導（引述水利署）。<br>畫面上的位置是示意，不是實際的蓄水區。</div>` },
+};
+const EV = {   // 各地點、各條件的證據
+  A: [
+    { t: '甲 ①：池底下的地層', b: `<p>圓林園在員林，位在沖積扇扇央的東北邊，靠近八卦台地，<b>不在扇頂</b>。</p><p>離開扇頂以後，砂和礫石之間開始夾著泥層。</p><p><b>怎麼檢驗：</b>按左邊的「倒水實驗」，看水滴穿過地層的速度，再和丙（扇頂）比一比。</p>${sketch}` },
+    { t: '甲 ②：水到得了哪一層？', b: `<p>水利署的監測發現：彰化多數監測井的壓縮量，主要來自<b>第二、第三含水層</b>的深度。溪州還觀測到 300 公尺以下的深層也在壓縮。</p><p>所以要問：從池底滲下去的水，到得了第二、第三含水層嗎？</p><p><b>怎麼檢驗：</b>做「倒水實驗」，看水滴最後停在哪一層。</p><div class="src">${SRC.wra106}</div>${sketch}` },
+    { t: '甲 ③：水源', b: `<div class="keys"><span>哪裡來</span><span>下大雨時，從市區的排水流進來的雨水。沒下雨就沒有水。</span><span>有多少</span><span>滿池一次是 31,490 立方公尺。大潮州人工湖一年補注約 4,657 萬立方公尺。<b>圓林園滿池一次，大約是大潮州一年的 1,500 分之 1。</b></span><span>乾淨嗎</span><span>雨水流過馬路和水溝，可能帶著泥沙和髒東西，要先沉澱、淨化。</span></div><div class="src">${SRC.yl}<br>${SRC.ting}</div>` },
+    { t: '甲 ④：空間和維護', b: `<div class="keys"><span>空間</span><span>整個公園 2.53 公頃，池底約 1.3 公頃。大潮州第 1 期的兩座沉澱池合起來有 32 公頃。</span><span>功能</span><span>設計的目的是防洪和休憩。滯洪池平時要<b>空著</b>，大雨來了才裝得下；補注卻希望水<b>留久一點</b>。</span><span>池底</span><span>池底是草坪，大家會在上面活動。如果常常泡水，或改成礫石，就不能這樣用了。</span></div><div class="src">${SRC.yl}<br>${SRC.ting}（圖 4）</div>` },
+  ],
+  B: [
+    { t: '乙 ①：池底下的地層', b: `<p>萬興滯洪池在二林，是沖積扇的<b>扇尾</b>。早年彰化下陷最嚴重的地方就在二林一帶。</p><p>濁水溪沖積扇的西側，地下 330 公尺以內大致有 4 個含水層和 4 個阻水層（黏土）。越靠近海邊，顆粒越細。</p><p><b>怎麼檢驗：</b>按「倒水實驗」，看水滴的速度。</p><div class="src">${SRC.cgs}<br>${SRC.wra106}</div>${sketch}` },
+    { t: '乙 ②：水到得了哪一層？', b: `<p>彰化的壓縮量主要來自<b>第二、第三含水層</b>。</p><p>扇尾的含水層之間，隔著一層一層的黏土。從地面滲下去的水，過得去嗎？</p><p><b>怎麼檢驗：</b>做「倒水實驗」，看水滴停在哪裡。</p><div class="src">${SRC.wra106}</div>${sketch}` },
+    { t: '乙 ③：水源', b: `<div class="keys"><span>哪裡來</span><span>大雨時，附近農田和排水路的水。沒下雨的時候水比較少。</span><span>有多少</span><span>這座池子的面積和滯洪量，查不到公開的官方數字，沒辦法算。</span><span>乾淨嗎</span><span>農田的排水可能帶著泥沙和肥料，補注之前要先處理。</span></div><div class="src">位置與用途：媒體報導（數位時代）。</div>` },
+    { t: '乙 ④：空間和維護', b: `<div class="keys"><span>空間</span><span>從空拍影像看，池子很大，而且有水面。</span><span>功能</span><span>水面上有浮力式太陽能板。滯洪、發電之外，如果還要補注，三種功能要一起考慮。</span><span>維護</span><span>要補注，池底的淤泥就要定期清。有水、有太陽能板，清起來比較麻煩。</span></div><div class="src">太陽能：媒體報導（數位時代）；${SRC.map}</div>` },
+  ],
+  C: [
+    { t: '丙 ①：河床下的地層', b: `<p>濁水溪沖積扇的<b>扇頂以礫石為主，阻水層不明顯</b>。</p><p>政府在民國 103 年把扇頂一帶 194.8 平方公里公告成「地下水補注地質敏感區」，因為這裡是地下水最重要的入口。</p><p><b>怎麼檢驗：</b>按「倒水實驗」，和甲、乙比速度。</p><div class="src">${SRC.cgs}</div><div class="src">剖面是示意圖，深度誇大。</div>` },
+    { t: '丙 ②：水到得了哪一層？', b: `<p>扇頂沒有明顯的黏土層，水可以往下，也可以往下游的含水層流。</p><div class="keys"><span>屏東的經驗</span><span>大潮州也在扇頂，可是補注的水只有大約 3.7% 進到第 2、第 3 含水層。</span><span>研究</span><span>有研究用電腦模擬：只在扇頂補注，對改善溪州下陷的效果大約 0.4%；在溪州用補注井把水送到深層，效果大約 21%。</span></div><p>所以扇頂是三個地點裡最好的，但是離下陷的地方遠，幫到深層的還是有限。</p><div class="src">${SRC.ting}<br>${SRC.chang}（模擬研究）</div>` },
+    { t: '丙 ③：水源', b: `<div class="keys"><span>哪裡來</span><span>濁水溪。雨季的時候水量很大。</span><span>有多少</span><span>水利署 109 年在南岸的蓄水區，每年大約可以入滲 1,000 萬噸。報導引述水利署：民國 100 到 104 年累積補注約 1.3 億噸。</span><span>乾淨嗎</span><span>濁水溪的水很濁、泥沙多。細泥會塞住孔隙，是要處理的問題。</span></div><div class="src">${SRC.e418}<br>公視、TVBS 報導（引述水利署）。</div>` },
+    { t: '丙 ④：空間和維護', b: `<div class="keys"><span>空間</span><span>河床本來就很寬，不用另外找地。</span><span>一舉兩得</span><span>民國 107 年起，配合揚塵防制，在河床上做「水覆蓋」：用水蓋住裸露的砂地，可以減少揚塵，水也順便滲下去。</span><span>維護</span><span>河道最重要的工作是讓洪水通過。泥沙會淤積，蓄水的地方要常常整理。</span></div><div class="src">${SRC.e418}</div>` },
+  ],
+};
+function openPanel(key, ev) {
+  const d = ev ? EV[key][ev - 1] : INFO[key]; $('pTitle').textContent = d.t; $('pSub').textContent = ev ? SITES[key].sub : d.s;
+  $('pBody').innerHTML = d.b; const p = $('panel'); p.classList.add('open'); p.scrollTop = 0;
+}
+
+/* =====================================================================
+   揭曉（四頁）＋黏土壓密的動畫（示意）
+   ===================================================================== */
+const REV = [
+  { t: '揭曉 1：三個地點比一比', b: () => `
+    <table class="res"><tr><th>條件</th><th>甲 圓林園</th><th>乙 萬興</th><th>丙 扇頂河床</th></tr>${CONDS.map((c, i) => `<tr><td>${'①②③④'[i]} ${c.t}</td>` + ['A', 'B', 'C'].map(s => `<td>${VS[REF[s][i]]}${ST.v[s][i] != null && ST.v[s][i] !== REF[s][i] ? `<small style="color:#b45309">（你：${VS[ST.v[s][i]]}）</small>` : ''}</td>`).join('') + '</tr>').join('')}</table>
+    <p>上面是參考看法。<b>越靠近扇頂、地層越透水、水越多，補注的效果越好。</b>丙最適合，和屏東的大潮州最像。</p>
+    <p>那麼，甲和乙這樣的滯洪池，是不是對地下水完全沒有幫助？</p>` },
+  { t: '揭曉 2：滯洪池其實已經在順便補注', b: () => `
+    <p class="big">答案是：<b>有幫助，而且已經在發生了。</b></p>
+    <div class="keys"><span>報導引述水利署</span><span>濁水溪沖積扇的滯洪池，底部大多沒有封底，水會從池底慢慢滲下去，有間接補注的效果。到 2020 年（民國 109 年），雲林、彰化 12 處滯洪設施，每年補注約 8,542 萬噸。</span>
+      <span>國家計畫</span><span>行政院在民國 100 年核定的計畫寫明：在雲林設置 9 座滯洪設施，除了減少水患，<b>也兼具地下水補注功能</b>。</span></div>
+    <p>所以「滯洪池能不能補注」的答案是：<b>可以</b>。真正的問題是：<b>補到哪一層？夠不夠？</b></p>
+    <div class="cite">環境資訊中心（2021.09.29）、中國時報（2021.04.11），皆引述水利署。${SRC.ey}<br>彰化哪幾座滯洪池有補注設計，沒有公開的官方清單。</div>` },
+  { t: '揭曉 3：可是，下陷發生在深層', b: () => `
+    <div class="keys"><span>下陷在哪</span><span>彰化多數監測井的壓縮量，主要來自<b>第二、第三含水層</b>。溪州在 300 公尺以下的深層也觀測到壓縮。</span>
+      <span>補到哪</span><span>從地面滲下去的水，大多先進到最上面的淺層。就算是扇頂的大潮州，也只有大約 3.7% 進到第 2、第 3 含水層。</span></div>
+    <p class="big">在扇央和扇尾，滯洪池補的多半是<b>淺層</b>；被深井抽水、正在壓縮的<b>深層</b>，幫助有限。</p>
+    <p>想幫到深層，有兩條路：<b>把乾淨的水送下去</b>（補注井），或是<b>讓深層少被抽</b>。</p>
+    <div class="cite">${SRC.wra106}<br>${SRC.ting}</div>` },
+  { t: '揭曉 4：黏土像鋁箔包，壓扁了就回不去', b: () => `
+    <canvas id="clayCv" width="1280" height="460"></canvas>
+    <div class="mrow" style="margin-top:8px"><button class="opt warn" id="btnPump">抽深層的水</button><button class="opt go" id="btnRefill">停止抽水，把水補回來</button><span id="clayTxt" style="font-size:15px;font-weight:800"></span></div>
+    <p>含水層的水被抽走，上下的黏土層會被擠出水、壓扁，地面就下沉。之後就算把水補回來，砂層會稍微撐回來，<b>黏土卻幾乎回不去</b>。</p>
+    <p class="big">所以，<b>「減少深層抽水」和「補注」一樣重要。</b>下一站 B3，換你設計彰化的方案。</p>
+    <div class="cite">動畫是示意，下沉的量誇大。</div>` },
+];
+const CLAY = { p: 0, c: 0, mode: 0 };
+function openReveal(i = 0) { ST.rev = clamp(i, 0, REV.length - 1); const d = REV[ST.rev]; $('revTitle').textContent = d.t; $('revBody').innerHTML = d.b();
+  document.querySelectorAll('#revSteps i').forEach((e, k) => e.classList.toggle('on', k <= ST.rev));
+  $('btnRevPrev').style.visibility = ST.rev ? '' : 'hidden'; $('btnRevNext').textContent = ST.rev === REV.length - 1 ? '到 B3 設計方案 ›' : '下一頁 ›';
+  $('revBox').classList.add('open'); $('revBox').querySelector('.box').scrollTop = 0;
+  if (ST.rev === 3) { CLAY.p = 0; CLAY.c = 0; CLAY.mode = 0; $('btnPump').onclick = () => CLAY.mode = 1; $('btnRefill').onclick = () => CLAY.mode = -1; }
+}
+function drawClay(dt) {
+  const cv = $('clayCv'); if (!cv || !$('revBox').classList.contains('open')) return;
+  CLAY.p = clamp(CLAY.p + CLAY.mode * dt / 3.5, 0, 1); CLAY.c = Math.max(CLAY.c, CLAY.p * 0.9 + (CLAY.c > 0 ? 0 : 0));
+  const x = cv.getContext('2d'), W = cv.width, H = cv.height, clay = CLAY.c * 84, sand = CLAY.p * 14, drop = clay + sand;
+  x.clearRect(0, 0, W, H);
+  const g0 = 70 + drop, yC1 = g0 + 70, c1h = 86 - clay / 2, yS = yC1 + c1h, sh = 110 - sand, yC2 = yS + sh, c2h = 86 - clay / 2;
+  x.fillStyle = '#dbeafe'; x.fillRect(0, 0, W, g0);
+  x.strokeStyle = '#94a3b8'; x.setLineDash([12, 8]); x.lineWidth = 3; x.beginPath(); x.moveTo(0, 70); x.lineTo(W, 70); x.stroke(); x.setLineDash([]);
+  x.fillStyle = '#bba97d'; x.fillRect(0, g0, W, 70); x.fillStyle = '#5d8a3a'; x.fillRect(0, g0, W, 8);
+  x.fillStyle = '#6b4b34'; x.fillRect(0, yC1, W, c1h); x.fillRect(0, yC2, W, c2h);
+  x.fillStyle = '#bba97d'; x.fillRect(0, yS, W, sh); x.fillStyle = `rgba(40,125,215,${0.55 * (1 - CLAY.p * 0.8)})`; x.fillRect(0, yS, W, sh);
+  x.fillStyle = '#4b3a2c'; x.fillRect(0, yC2 + c2h, W, H - yC2 - c2h);
+  // 房子、井
+  x.fillStyle = '#f8fafc'; x.fillRect(250, g0 - 54, 80, 54); x.fillStyle = '#b91c1c'; x.beginPath(); x.moveTo(238, g0 - 54); x.lineTo(290, g0 - 90); x.lineTo(342, g0 - 54); x.fill();
+  x.fillStyle = 'rgba(15,23,42,.85)'; x.fillRect(900, g0 - 30, 14, yS + sh * 0.7 - g0 + 30); x.fillStyle = '#f97316'; x.fillRect(890, g0 - 40, 34, 12);
+  if (CLAY.mode > 0 && CLAY.p < 1) { x.fillStyle = '#38bdf8'; for (let k = 0; k < 4; k++) { const yy = yS + sh * 0.6 - ((U.time * 1.2 + k / 4) % 1) * (yS + sh * 0.6 - g0); x.beginPath(); x.arc(907, yy, 5, 0, 6.283); x.fill(); } }
+  // 擠出水的箭頭
+  if (CLAY.mode > 0 && CLAY.p < 1) { x.strokeStyle = '#fde68a'; x.lineWidth = 5; for (const px of [200, 480, 700, 1080]) { x.beginPath(); x.moveTo(px, yC1 + c1h * 0.5); x.lineTo(px, yS + 10); x.moveTo(px - 8, yS + 2); x.lineTo(px, yS + 12); x.lineTo(px + 8, yS + 2); x.moveTo(px, yC2 + c2h * 0.5); x.lineTo(px, yC2 - 10); x.moveTo(px - 8, yC2 - 2); x.lineTo(px, yC2 - 12); x.lineTo(px + 8, yC2 - 2); x.stroke(); } }
+  x.font = '900 28px "Noto Sans TC","Microsoft JhengHei",sans-serif'; x.textBaseline = 'middle';
+  const tag = (t, tx, ty, bg) => { const w = x.measureText(t).width + 22; x.fillStyle = bg; x.beginPath(); x.roundRect(tx, ty - 21, w, 42, 11); x.fill(); x.fillStyle = '#fff'; x.fillText(t, tx + 11, ty + 1); };
+  tag('原來的地面', 20, 44, 'rgba(100,116,139,.9)');
+  if (drop > 6) { x.strokeStyle = '#dc2626'; x.lineWidth = 5; x.beginPath(); x.moveTo(560, 72); x.lineTo(560, g0 - 4); x.moveTo(550, g0 - 16); x.lineTo(560, g0 - 4); x.lineTo(570, g0 - 16); x.stroke(); tag('地面下沉了（示意）', 580, 70 + drop / 2, 'rgba(220,38,38,.92)'); } tag('黏土層', 20, yC1 + c1h / 2, 'rgba(75,50,30,.95)'); tag('深層的含水層（砂）', 20, yS + sh / 2, 'rgba(2,132,199,.9)'); tag('黏土層', 20, yC2 + c2h / 2, 'rgba(75,50,30,.95)'); tag('深井', 940, g0 - 34, 'rgba(194,65,12,.95)');
+  $('clayTxt').textContent = CLAY.mode === 0 ? '先按「抽深層的水」' : CLAY.mode > 0 ? (CLAY.p < 1 ? '抽水中…黏土被壓扁，地面下沉' : '水快被抽光了。試試把水補回來') : (CLAY.p > 0 ? '補水中…' : (CLAY.c > 0.05 ? '水補回來了，砂層撐回來一點，黏土卻回不去。地面沒有回到原來的高度。' : '水是滿的'));
+}
+
+/* ---------- 下陷圖表 ---------- */
+function drawCharts() {
+  const c = FACTS.subsidence_changhua_km2, p = FACTS.subsidence_pingtung_km2;
+  const bars = (cv, yrs, vals, max, hi) => { const x = cv.getContext('2d'), W = cv.width, H = cv.height, n = vals.length, L = 20, B = 54, T = 44;
+    x.clearRect(0, 0, W, H); x.textAlign = 'center'; x.font = '800 22px "Noto Sans TC",sans-serif';
+    vals.forEach((v, i) => { const bw = (W - L * 2) / n * 0.7, bx = L + (W - L * 2) / n * (i + 0.5) - bw / 2, bh = Math.max(3, v / max * (H - B - T));
+      x.fillStyle = hi(i, v) ? '#dc2626' : '#0369a1'; x.fillRect(bx, H - B - bh, bw, bh);
+      x.fillStyle = '#0d2238'; if (n < 10 || v >= 50 || i >= n - 2 || i === 0) x.fillText(v, bx + bw / 2, H - B - bh - 14);
+      x.fillStyle = '#475569'; if (n < 10 || i % 2 === 0) x.fillText(yrs[i], bx + bw / 2, H - 26); });
+    x.textAlign = 'left'; return x; };
+  const x = bars($('subCh'), c.years_roc, c.values, 430, (i, v) => false);
+  x.font = '900 26px "Noto Sans TC",sans-serif'; x.fillStyle = '#0369a1'; x.fillText('彰化（民國年）', 420, 40);
+  x.fillStyle = '#dc2626'; x.fillText('114 年：面積 0，但溪州每年還下陷 2.9 公分', 700, 250); x.strokeStyle = '#dc2626'; x.lineWidth = 3; x.beginPath(); x.moveTo(1290, 270); x.lineTo(1318, 396); x.stroke();
+  const y = bars($('subPt'), p.years_roc, p.values, 125, (i, v) => v > 50); y.font = '900 26px "Noto Sans TC",sans-serif'; y.fillStyle = '#0369a1'; y.fillText('屏東（民國年）', 30, 36);
+}
+
+/* ---------- 每一幀 ---------- */
+const _v = new THREE.Vector3();
+function frame() {
+  const dt = Math.min(clock.getDelta(), 0.1); U.time += dt;
+  const k = ST.site;
+  if (k !== 'all' && BLK[k]) { const B = BLK[k], h = SITES[k].blk.h;
+    if (B.mesh.visible) { B.mesh.position.y = B.top.y + lerp(-h - 4, h + 26, ST.lift) - h / 2; stepPour(k, dt); if (U.time - B.last > 0.05) { B.last = U.time; drawSection(k); } } }
+  for (const s of ['A', 'B', 'C']) if (SITES[s].ring) SITES[s].ring.scale.setScalar(1 + 0.12 * Math.sin(U.time * 2.4));
+  drawClay(dt);
+  controls.update();
+  const w = innerWidth, h = innerHeight;
+  for (const L of LBL[ST.scene]) { _v.copy(L.pos).project(camera); const vis = ST.lift < 0.3 && _v.z < 1 && Math.abs(_v.x) < 1.1 && Math.abs(_v.y) < 1.1; L.el.classList.toggle('hide', !vis); if (vis) L.el.style.transform = `translate(${(_v.x * .5 + .5) * w}px,${(-_v.y * .5 + .5) * h}px)`; }
+  renderer.render(SC[ST.scene], camera);
+}
+
+function setupUI() {
+  const cfg = $('cfg'), res = $('res');
+  const fold = () => { const w = innerWidth; cfg.classList.toggle('closed', w < 760); res.classList.toggle('closed', w < 1000); };
+  fold(); let lastW = innerWidth; addEventListener('resize', () => { if (Math.abs(innerWidth - lastW) > 80) { lastW = innerWidth; fold(); } });
+  for (const [a, b] of [[cfg, res], [res, cfg]]) a.querySelector('h3').addEventListener('click', () => { a.classList.toggle('closed'); if (!a.classList.contains('closed') && innerWidth < 1000) b.classList.add('closed'); });
+  document.querySelectorAll('#siteOpts .opt').forEach(b => b.addEventListener('click', () => goSite(b.dataset.site)));
+  $('btnSec').addEventListener('click', () => toggleSec()); $('btnPour').addEventListener('click', pour);
+  $('btnReveal').addEventListener('click', () => openReveal(0));
+  $('btnRevPrev').addEventListener('click', () => openReveal(ST.rev - 1));
+  $('btnRevNext').addEventListener('click', () => { if (ST.rev === REV.length - 1) { $('revBox').classList.remove('open'); fetch('data/units.json').then(r => r.json()).then(u => { if (u.pages.b3.ready) location.href = 'b3.html'; else say('all'); }); } else openReveal(ST.rev + 1); });
+  $('btnIntro').addEventListener('click', () => $('introBox').classList.add('open')); $('btnIntroOk').addEventListener('click', () => $('introBox').classList.remove('open'));
+  $('btnCard').addEventListener('click', () => openPanel('station'));
+  $('chk').addEventListener('click', e => { const b = e.target.closest('button'); if (!b || ST.site === 'all') return; const k = ST.site;
+    if (b.dataset.ev !== undefined) { const i = +b.dataset.ev; openPanel(k, i + 1); if (i >= 2 && !ST.seen[k][i]) { ST.seen[k][i] = 1; save(); renderAll(); } }
+    else if (b.dataset.c !== undefined) setV(k, +b.dataset.c, +b.dataset.k); });
+  $('mx').addEventListener('click', e => { const t = e.target.closest('[data-go]'); if (t) goSite(t.dataset.go); });
+  document.querySelectorAll('.vw').forEach(b => b.addEventListener('click', () => { const v = b.dataset.v; if (v === 'sec') { if (ST.site === 'all') goSite('C').then(() => toggleSec(true)); else toggleSec(true); } else goSite(v); }));
+  document.querySelector('#panel .x').addEventListener('click', () => $('panel').classList.remove('open'));
+  document.querySelectorAll('.modal').forEach(m => { m.querySelector('.x').addEventListener('click', () => m.classList.remove('open')); m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); }); });
+  $('btnCondOk').addEventListener('click', () => $('condBox').classList.remove('open'));
+  $('credit').addEventListener('click', () => $('credit').classList.toggle('open'));
+  drawCharts();
+}
+</script>
+<script src="js/nav.js" data-narrow="1100" data-narrow-pos="center" defer></script>
+</body>
+</html>

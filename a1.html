@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>A1 為什麼需要地下水銀行？｜地下水銀行 3D 探索</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script async src="https://cdn.jsdelivr.net/npm/es-module-shims@1.10.0/dist/es-module-shims.js"></script>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+<style>
+:root{
+  --glass: rgba(255,255,255,.72); --stroke: rgba(255,255,255,.78);
+  --ink:#0d2238; --ink2:#3a536d; --accent:#0369a1;
+  --shadow: 0 12px 40px rgba(12,42,80,.22), 0 2px 6px rgba(12,42,80,.10);
+  --radius: 20px;
+  --font: "Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:#b9cfe0;font-family:var(--font);color:var(--ink);-webkit-tap-highlight-color:transparent}
+#app{position:fixed;inset:0;overflow:hidden;user-select:none;-webkit-user-select:none}
+#app canvas{display:block;width:100%;height:100%;touch-action:none;outline:none}
+button{font-family:inherit;color:inherit;cursor:pointer;border:0;background:none}
+a{color:var(--accent)}
+.glass{background:var(--glass);-webkit-backdrop-filter:blur(18px) saturate(170%);backdrop-filter:blur(18px) saturate(170%);border:1px solid var(--stroke);box-shadow:var(--shadow);border-radius:var(--radius)}
+
+#titleCard{position:absolute;top:14px;left:14px;padding:10px 18px 10px 12px;display:flex;gap:12px;align-items:center;z-index:5;max-width:calc(100% - 28px)}
+#titleCard .logo{width:46px;height:46px;flex:none;border-radius:14px;display:grid;place-items:center;background:linear-gradient(145deg,#38bdf8,#0369a1);box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 4px 12px rgba(3,105,161,.35)}
+#titleCard h1{margin:0;font-size:21px;font-weight:900;letter-spacing:.04em;line-height:1.2}
+#titleCard p{margin:2px 0 0;font-size:13.5px;color:var(--ink2);font-weight:500}
+
+#cfg{position:absolute;top:134px;left:14px;width:262px;padding:14px 14px 12px;z-index:6;max-height:calc(100% - 218px);overflow:auto}
+#cfg h3,#res h3{margin:0 0 8px;font-size:17px;font-weight:900}
+.grp{margin-bottom:11px}
+.grp .lab{font-size:13.5px;font-weight:800;color:var(--ink2);margin-bottom:5px}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.opts.c3{grid-template-columns:1fr 1fr 1fr}
+.opt{padding:8px 6px;border-radius:12px;background:rgba(255,255,255,.66);font-size:14.5px;font-weight:800;line-height:1.2;text-align:center}
+.opt small{display:block;font-size:11px;font-weight:700;color:var(--ink2);margin-top:1px}
+.opt.on{background:var(--accent);color:#fff}.opt.on small{color:#e0f2fe}
+.opt.wide{grid-column:1/-1}
+.opt:disabled{opacity:.42;cursor:default}
+.opt.go{background:#16a34a;color:#fff}.opt.go small{color:#dcfce7}
+.opt.warn{background:#b45309;color:#fff}.opt.warn small{color:#ffedd5}
+.note{font-size:11.5px;color:#64748b;line-height:1.55;margin-top:6px}
+
+#res{position:absolute;top:96px;right:14px;width:286px;padding:14px 16px 12px;z-index:6;max-height:calc(100% - 180px);overflow:auto}
+.kv{display:flex;justify-content:space-between;align-items:baseline;font-size:14.5px;margin:6px 0 3px;font-weight:700;gap:8px}
+.kv b{font-size:16px;font-weight:900;white-space:nowrap}
+.kv small{font-size:11px;color:#64748b;font-weight:700}
+.months{display:grid;grid-template-columns:repeat(12,1fr);gap:2px;margin:4px 0 2px}
+.months i{height:20px;border-radius:4px;background:#e2e8f0;font-style:normal;font-size:10.5px;font-weight:800;display:grid;place-items:center;color:#64748b}
+.months i.wet{background:#bae6fd;color:#075985}
+.months i.now{outline:2.5px solid #0d2238;background:#fde68a;color:#0d2238}
+.bar{position:relative;height:12px;border-radius:6px;background:#e2e8f0;overflow:hidden;margin:3px 0 4px}
+.bar>div{height:100%;background:linear-gradient(90deg,#38bdf8,#0369a1);transition:width .25s}
+.bar.mud>div{background:linear-gradient(90deg,#a16207,#713f12)}
+.years{position:relative;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;height:92px;align-items:end;margin:8px 0 2px;padding-top:4px;border-bottom:2px solid #94a3b8}
+.years .y{position:relative;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center}
+.years .y div{width:100%;border-radius:6px 6px 0 0;background:linear-gradient(#38bdf8,#0369a1);transition:height .3s;min-height:0}
+.years .y.bad div{background:linear-gradient(#fbbf24,#b45309)}
+.years .y span{position:absolute;bottom:2px;font-size:12px;font-weight:900;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.5)}
+.years .goal{position:absolute;left:0;right:0;border-top:2px dashed #dc2626;pointer-events:none}
+.years .goal em{position:absolute;right:0;top:-15px;font-style:normal;font-size:10.5px;font-weight:800;color:#dc2626;background:rgba(255,255,255,.8);padding:0 3px;border-radius:3px}
+.ylab{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;font-size:11.5px;font-weight:800;color:var(--ink2);text-align:center}
+
+#rule{position:absolute;left:50%;bottom:78px;transform:translateX(-50%);width:min(700px,calc(100% - 28px));padding:10px 16px 10px 14px;z-index:6;font-size:15.5px;line-height:1.6;display:flex;gap:10px;align-items:flex-start}
+#rule .ico{flex:none;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:#0369a1;color:#fff}
+#rule.warn .ico{background:#dc2626;animation:pulse 1s infinite}
+#rule.good .ico{background:#16a34a}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(220,38,38,.6)}50%{box-shadow:0 0 0 10px rgba(220,38,38,0)}}
+
+#views{position:absolute;left:14px;bottom:14px;display:flex;gap:6px;padding:7px;z-index:5;max-width:calc(100% - 28px);overflow-x:auto;scrollbar-width:none}
+.vw{flex:none;display:flex;align-items:center;gap:7px;padding:8px 13px 8px 8px;border-radius:14px;font-size:15px;font-weight:700;transition:background .2s,transform .2s}
+.vw b{flex:none;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;color:#fff;font-size:14px;background:var(--c)}
+.vw:hover{background:rgba(255,255,255,.7)} .vw.active{background:#fff;transform:translateY(-2px)}
+
+#labels{position:absolute;inset:0;pointer-events:none;z-index:3;overflow:hidden}
+.lbl{position:absolute;left:0;top:0;white-space:nowrap;will-change:transform;transition:opacity .25s}
+.lbl.hide{opacity:0;pointer-events:none}
+.lbl.hide *{pointer-events:none!important}
+.pin{pointer-events:auto;display:flex;align-items:center;gap:6px;padding:4px 11px 4px 4px;border-radius:999px;font-size:14.5px;font-weight:900;background:rgba(255,255,255,.92);box-shadow:0 4px 14px rgba(0,30,60,.25);cursor:pointer;transform:translate(-50%,-100%)}
+.pin b{min-width:22px;height:22px;padding:0 5px;border-radius:11px;display:grid;place-items:center;color:#fff;font-size:12px;background:var(--c,#475569)}
+.geo{padding:3px 10px;border-radius:9px;font-size:14px;font-weight:800;color:#fff;background:rgba(13,34,56,.55);text-shadow:0 1px 2px rgba(0,0,0,.4);transform:translate(-50%,-50%)}
+.geo.water{background:rgba(3,105,161,.66)} .geo.canal{background:rgba(185,28,28,.66)}
+
+#panel{position:absolute;top:96px;right:14px;width:min(400px,calc(100% - 28px));max-height:calc(100% - 190px);overflow:auto;padding:18px 20px;z-index:8;transform:translateX(120%);transition:transform .45s cubic-bezier(.2,.8,.2,1)}
+#panel.open{transform:none}
+#panel h2{margin:0 0 4px;font-size:21px;font-weight:900}
+#panel .sub{font-size:13px;color:var(--ink2);margin-bottom:10px}
+#panel p,.modal p{font-size:15.5px;line-height:1.75;margin:8px 0}
+.x{position:absolute;top:10px;right:10px;width:34px;height:34px;border-radius:50%;font-size:20px;font-weight:900;color:var(--ink2)}
+.x:hover{background:rgba(255,255,255,.7)}
+.keys{display:grid;grid-template-columns:auto 1fr;gap:6px 10px;font-size:15px;margin-top:10px;line-height:1.6}
+.keys span:nth-child(odd){font-weight:900;color:#0c4a6e;white-space:nowrap}
+.src{font-size:12.5px;color:#64748b;line-height:1.6;margin-top:12px;border-top:1px solid rgba(100,116,139,.25);padding-top:8px}
+.box2{border-radius:14px;padding:10px 14px;margin:10px 0;font-size:15.5px;line-height:1.7}
+.box2.observe{background:rgba(14,165,233,.12)} .box2.think{background:rgba(245,158,11,.14)}
+.box2 b{display:block;margin-bottom:2px}
+.box2 details{margin-top:6px}.box2 summary{cursor:pointer;font-weight:800;color:#b45309}
+
+.modal{position:absolute;inset:0;z-index:12;display:none;place-items:center;background:rgba(13,34,56,.42)}
+.modal.open{display:grid}
+.modal .box{position:relative;width:min(720px,calc(100% - 24px));max-height:calc(100% - 24px);overflow:auto;padding:20px 22px 16px}
+.modal h2{margin:0 0 4px;font-size:23px;font-weight:900}
+.modal .sub{font-size:14.5px;color:var(--ink2);margin-bottom:8px}
+.stars{font-size:40px;letter-spacing:6px;color:#f59e0b;margin:4px 0}
+.stars i{font-style:normal;color:#94a3b8}
+.mrow{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:12px}
+.mrow .opt{padding:10px 16px;font-size:16px}
+.cond{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px}
+.cond .c{border-radius:16px;padding:14px 16px;background:#fff;border:2px solid #0369a1;box-shadow:0 6px 16px rgba(3,105,161,.18)}
+.cond .c.lock{border:2px dashed #94a3b8;background:rgba(255,255,255,.5);box-shadow:none;color:#64748b}
+.cond .c .n{display:inline-grid;place-items:center;width:30px;height:30px;border-radius:50%;background:#0369a1;color:#fff;font-weight:900;margin-right:6px}
+.cond .c.lock .n{background:#94a3b8}
+.cond .c h4{display:inline;font-size:18px;font-weight:900;margin:0}
+.cond .c p{font-size:14.5px;line-height:1.65;margin:8px 0 0}
+table.res{width:100%;border-collapse:collapse;font-size:15.5px;margin-top:6px}
+table.res td,table.res th{padding:6px 8px;border-bottom:1px solid rgba(100,116,139,.25);text-align:left}
+table.res td:nth-child(n+2),table.res th:nth-child(n+2){text-align:right}
+
+#credit{position:absolute;right:12px;bottom:14px;z-index:7;max-width:min(520px,calc(100% - 24px));padding:8px 12px;font-size:12.5px;line-height:1.6;color:var(--ink2);cursor:pointer;border-radius:14px}
+#credit b{font-size:13.5px;color:var(--ink);white-space:nowrap}
+#credit span{display:none}
+#credit.open span{display:block;margin-top:4px}
+#loading{position:fixed;inset:0;z-index:20;display:grid;place-items:center;background:linear-gradient(160deg,#dbe8f2,#b9cfe0);transition:opacity .6s}
+#loading div{font-size:17px;font-weight:700;color:var(--ink2)}
+#loading.done{opacity:0;pointer-events:none}
+.fold h3{display:flex;align-items:center;gap:8px;cursor:pointer;margin:0 0 8px}
+.fold h3::after{content:"";margin-left:auto;width:9px;height:9px;border-right:2.5px solid var(--ink2);border-bottom:2.5px solid var(--ink2);transform:rotate(45deg) translateY(-3px);transition:transform .2s}
+.fold h3 .mini{display:none;font-size:13px;font-weight:800;color:var(--accent)}
+.fold.closed{width:auto!important;max-width:calc(50% - 20px);padding:9px 14px}
+.fold.closed h3{margin:0}.fold.closed h3::after{transform:rotate(-45deg)}
+.fold.closed h3 .mini{display:inline}
+.fold.closed>*:not(h3){display:none!important}
+@media (max-width:1100px){#cfg{top:58px}#res{top:58px}#panel{top:58px}#titleCard{top:8px}}
+#views{max-width:calc(100% - 150px)}
+@media (max-width:820px){#cfg{width:226px}#res{width:252px}.opt{font-size:13.5px}#rule{font-size:14px}.cond{grid-template-columns:1fr}}
+@media (max-height:620px){#rule{padding:6px 12px;font-size:13.5px;line-height:1.45}#rule .ico{width:24px;height:24px}}
+/* ---- A1／A2／A6 示意剖面站追加 ---- */
+.bar.red>div{background:linear-gradient(90deg,#fb923c,#b91c1c)}
+.bar.green>div{background:linear-gradient(90deg,#4ade80,#15803d)}
+.kv b.alert{color:#b91c1c}
+.chart{margin:6px 0 0}.chart svg{display:block;width:100%;height:auto}
+.chart .cap{font-size:12px;font-weight:800;color:var(--ink2);margin-bottom:2px}
+table.mini{width:100%;border-collapse:collapse;font-size:13px;margin-top:4px}
+table.mini td,table.mini th{padding:4px 4px;border-bottom:1px solid rgba(100,116,139,.22);text-align:left;font-weight:700}
+table.mini th{font-size:11.5px;color:var(--ink2)}
+.exag{display:inline-block;margin-top:4px;padding:2px 8px;border-radius:8px;background:rgba(124,58,237,.12);color:#6d28d9;font-size:12px;font-weight:800}
+.grainCv{display:block;width:100%;height:auto;border-radius:14px;margin:8px 0 4px;background:#e2e8f0}
+.cond .c.new{box-shadow:0 0 0 4px #fde68a,0 6px 16px rgba(3,105,161,.18)}
+.cond .c .tag{display:inline-block;margin-left:6px;padding:1px 8px;border-radius:8px;background:#f59e0b;color:#fff;font-size:12px;font-weight:900;vertical-align:middle}
+.geo.salt{background:rgba(185,28,28,.72)} .geo.clay{background:rgba(120,72,30,.78)} .geo.exg{background:rgba(109,40,217,.7);font-size:12.5px}
+.geo.ref{background:rgba(255,255,255,.85);color:#0d2238;text-shadow:none}
+.spark{display:block;width:100%;height:56px;margin:4px 0 2px}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="labels"></div>
+
+<div id="titleCard" class="glass">
+  <div class="logo"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12l5-4 5 4v6H3z"/><path d="M15 15c1.5-1.2 3-1.2 4.5 0S22 16.2 23 15"/><path d="M15 19c1.5-1.2 3-1.2 4.5 0S22 20.2 23 19"/><path d="M8 18v3"/></svg></div>
+  <div><h1>A1 為什麼需要地下水銀行？</h1><p>屏東沿海（佳冬、林邊）：抽太多地下水，會發生什麼事？</p></div>
+</div>
+
+<div id="cfg" class="glass fold">
+  <h3>操作設定<span class="mini" id="cfgMini"></span></h3>
+  <div class="grp"><div class="lab">① 季節</div>
+    <div class="opts" id="seaOpts">
+      <button class="opt on" data-sea="wet">豐水期<small>雨季，河水滿</small></button>
+      <button class="opt" data-sea="dry">枯水期<small>雨少，河水細</small></button>
+    </div></div>
+  <div class="grp"><div class="lab">② 抽地下水的量</div>
+    <div class="opts c3" id="pumpOpts">
+      <button class="opt on" data-p="0">少<small>補得回來</small></button>
+      <button class="opt" data-p="1">多<small>有點透支</small></button>
+      <button class="opt" data-p="2">超抽<small>抽比補多</small></button>
+    </div></div>
+  <div class="grp"><div class="lab">③ 時間（1 秒＝1 年，示意）</div>
+    <div class="opts c3">
+      <button class="opt go" id="btnPlay">▶ 播放</button>
+      <button class="opt on" data-sp="1">一般</button>
+      <button class="opt" data-sp="3">快轉</button>
+      <button class="opt wide" id="btnReset">↺ 重來</button>
+    </div></div>
+  <div class="grp"><div class="lab">④ 考驗</div>
+    <div class="opts"><button class="opt wide warn" id="btnStorm">颱風大雨 🌧<small id="stormTip">看看雨水退不退得掉</small></button></div></div>
+  <button class="opt wide go" id="btnCard" style="width:100%">本站重點・想一想</button>
+  <div class="note">這是示意剖面，不是真實地形。地下水位、地面下沉、海水入侵和淹水都是簡化的教學示意，時間加速。<br><span class="exag">示意圖：高度、深度誇大</span></div>
+</div>
+
+<div id="res" class="glass fold">
+  <h3>現在狀況<span class="mini" id="resMini"></span></h3>
+  <div class="kv"><span id="rYear">第 0 年</span><b id="rSea">豐水期</b></div>
+  <div class="kv"><span>地下水位 <small>示意</small></span><b id="rWt">–</b></div>
+  <div class="bar"><div id="bWt"></div></div>
+  <div class="kv"><span>地面下沉 <small>示意</small></span><b id="rSink">–</b></div>
+  <div class="bar mud"><div id="bSink"></div></div>
+  <div class="kv"><span>海水入侵 <small>示意</small></span><b id="rSalt">–</b></div>
+  <div class="bar red"><div id="bSalt"></div></div>
+  <div class="kv"><span>淹水範圍 <small>示意</small></span><b id="rFlood">沒有淹水</b></div>
+  <div class="chart" id="chart"></div>
+  <div class="note" id="chartSrc"></div>
+</div>
+
+<div id="rule" class="glass"><div class="ico"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10 21h4"/></svg></div><div id="ruleTxt"></div></div>
+
+<div id="views" class="glass">
+  <button class="vw" data-v="overview" style="--c:#0284c7"><b>1</b>全景</button>
+  <button class="vw" data-v="section" style="--c:#7c3aed"><b>2</b>地底剖面</button>
+  <button class="vw" data-v="ponds" style="--c:#0369a1"><b>3</b>魚塭和水井</button>
+  <button class="vw" data-v="coast" style="--c:#b91c1c"><b>4</b>海邊</button>
+  <button class="vw" data-v="sink" style="--c:#b45309"><b>5</b>下沉對照</button>
+</div>
+
+<aside id="panel" class="glass">
+  <button class="x" aria-label="關閉">×</button>
+  <h2 id="pTitle"></h2><div class="sub" id="pSub"></div><div id="pBody"></div>
+</aside>
+
+<div id="credit" class="glass"><b>ⓘ 資料來源</b><span>下陷面積：經濟部水利署〈114 年度地層下陷檢測結果說明〉｜顯著下陷定義：經濟部水利署地層下陷網頁｜沿海累積下陷：遠見雜誌報導（引述 1998 年資料）｜超抽與下陷、海水入侵：丁澈士等（2021）《土木水利》48(6)｜材質與天空：Poly Haven（CC0）｜剖面、地形、水位、下沉、海水入侵和淹水都是教學示意</span></div>
+<div id="loading"><div>正在準備屏東沿海的剖面…</div></div>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
+/* ---------- 共用小工具（A1／A2／A6 示意剖面站相同） ---------- */
+const TEX = 'assets/tex/';
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const lerp = (a, b, t) => a + (b - a) * t;
+const smooth = (a, b, v) => { const t = clamp((v - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
+function rng(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+const fmt = n => Math.round(n).toLocaleString('en-US');
+const $ = id => document.getElementById(id);
+const FONT = '"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif';
+
+let renderer, scene, camera, controls, waterN;
+const clock = new THREE.Clock(), U = { time: 0 }, labels = [];
+const texLoader = new THREE.TextureLoader();
+const loadTex = (url, srgb = false, rep = true) => new Promise((res, rej) => texLoader.load(url, t => {
+  if (srgb) t.colorSpace = THREE.SRGBColorSpace;
+  if (rep) t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.anisotropy = 8; res(t);
+}, undefined, rej));
+
+function setupRenderer(o) {
+  renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  renderer.setSize(innerWidth, innerHeight);
+  renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 0.9;
+  $('app').appendChild(renderer.domElement);
+  scene = new THREE.Scene();
+  scene.fog = new THREE.Fog(0xd3d9db, o.fog[0], o.fog[1]);
+  camera = new THREE.PerspectiveCamera(45, innerWidth / innerHeight, 1, o.far || 6000);
+  controls = new OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true; controls.dampingFactor = 0.08;
+  controls.maxPolarAngle = Math.PI * 0.53; controls.minDistance = o.minD; controls.maxDistance = o.maxD;
+  controls.screenSpacePanning = false;
+  const sun = new THREE.DirectionalLight(0xfff1dd, 2.3); sun.position.set(-0.35, 0.8, 0.55).multiplyScalar(500);
+  scene.add(sun, new THREE.HemisphereLight(0xcfe3ff, 0x6b5a3e, 0.6));
+  addEventListener('resize', () => { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); });
+}
+function loadSky() {
+  return new RGBELoader().loadAsync('assets/hdri/sky_1k.hdr').then(hdr => {
+    hdr.mapping = THREE.EquirectangularReflectionMapping;
+    scene.background = new THREE.Color(0xd5e4ef);
+    const pm = new THREE.PMREMGenerator(renderer); scene.environment = pm.fromEquirectangular(hdr).texture; pm.dispose();
+  });
+}
+
+/* 地表材質：材質貼圖提供細節，頂點屬性 aC（rgb＝底色、a＝貼圖原色的比例）決定顏色 */
+function blendMat(tex, opts = {}) {
+  const m = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.95, metalness: 0, ...opts });
+  m.onBeforeCompile = sh => {
+    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nattribute vec4 aC; varying vec4 vC;')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvC = aC;');
+    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying vec4 vC;')
+      .replace('#include <map_fragment>', `#include <map_fragment>
+      float lum = dot(diffuseColor.rgb, vec3(.299,.587,.114));
+      diffuseColor.rgb = mix(vC.rgb * (0.6 + 0.9 * lum), diffuseColor.rgb, vC.a);`);
+  };
+  return m;
+}
+/* 規則網格地表：pos(i,j) → [x,z]；col(x,z) → [r,g,b,a]（sRGB 0–1） */
+function makeGrid(NX, NZ, pos, col, mat, uvScale = 8) {
+  const n = NX * NZ, P = new Float32Array(n * 3), UV = new Float32Array(n * 2), C = new Float32Array(n * 4), XZ = new Float32Array(n * 2);
+  const c = new THREE.Color();
+  for (let j = 0; j < NZ; j++) for (let i = 0; i < NX; i++) {
+    const k = j * NX + i, [x, z] = pos(i, j), cc = col(x, z);
+    XZ[k * 2] = x; XZ[k * 2 + 1] = z; P[k * 3] = x; P[k * 3 + 2] = z; UV[k * 2] = x / uvScale; UV[k * 2 + 1] = z / uvScale;
+    c.setRGB(cc[0], cc[1], cc[2], THREE.SRGBColorSpace); C.set([c.r, c.g, c.b, cc[3]], k * 4);
+  }
+  const idx = new Uint32Array((NX - 1) * (NZ - 1) * 6); let p = 0;
+  for (let j = 0; j < NZ - 1; j++) for (let i = 0; i < NX - 1; i++) { const a = j * NX + i, b = a + 1, cI = a + NX, d = cI + 1; idx[p++] = a; idx[p++] = cI; idx[p++] = b; idx[p++] = b; idx[p++] = cI; idx[p++] = d; }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(P, 3)); g.setAttribute('uv', new THREE.BufferAttribute(UV, 2)); g.setAttribute('aC', new THREE.BufferAttribute(C, 4));
+  g.setIndex(new THREE.BufferAttribute(idx, 1));
+  const mesh = new THREE.Mesh(g, mat); scene.add(mesh);
+  return { mesh, XZ, n, setY(f) { for (let k = 0; k < n; k++) P[k * 3 + 1] = f(XZ[k * 2], XZ[k * 2 + 1], k); g.attributes.position.needsUpdate = true; g.computeVertexNormals(); g.computeBoundingSphere(); } };
+}
+/* 剖面（切面）：沿 P(t) → [x,z,u] 的一條帶子，上緣跟著地表走；v 依高度 Y0–Y1 對應到畫布 */
+function makeFace(N, P, map) {
+  const pos = new Float32Array((N + 1) * 6), uv = new Float32Array((N + 1) * 4), idx = [];
+  for (let i = 0; i < N; i++) { const a = i * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.BufferAttribute(uv, 2)); g.setIndex(idx);
+  const mesh = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ map, side: THREE.DoubleSide, toneMapped: false })); scene.add(mesh);
+  return { mesh, update(top, yb, Y0, Y1) {
+    for (let i = 0; i <= N; i++) { const [x, z, u] = P(i / N), yt = top(x, z); pos.set([x, yt, z, x, yb, z], i * 6); uv.set([u, (yt - Y0) / (Y1 - Y0), u, (yb - Y0) / (Y1 - Y0)], i * 4); }
+    g.attributes.position.needsUpdate = true; g.attributes.uv.needsUpdate = true; g.computeBoundingSphere();
+  } };
+}
+function canvasTex(w, h) {
+  const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+  const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 8;
+  return { cv, ctx: cv.getContext('2d'), tex };
+}
+/* 地層花紋（畫一次，當 pattern 用） */
+function makePattern(kind, base, seed = 1) {
+  const c = document.createElement('canvas'); c.width = c.height = 96; const x = c.getContext('2d'), r = rng(seed);
+  x.fillStyle = base; x.fillRect(0, 0, 96, 96);
+  if (kind === 'gravel') for (let i = 0; i < 46; i++) { const s = 3 + r() * r() * 11, g = 105 + r() * 90 | 0; x.fillStyle = `rgb(${g},${g - 8},${g - 20})`; x.beginPath(); x.ellipse(r() * 96, r() * 96, s, s * (0.6 + r() * 0.3), r() * 3, 0, 6.3); x.fill(); x.strokeStyle = 'rgba(30,24,18,.45)'; x.lineWidth = 1; x.stroke(); }
+  if (kind === 'sand') for (let i = 0; i < 260; i++) { x.fillStyle = r() < 0.5 ? 'rgba(255,255,255,.35)' : 'rgba(60,40,10,.28)'; x.fillRect(r() * 96, r() * 96, 2, 2); }
+  if (kind === 'clay') { x.strokeStyle = 'rgba(40,25,15,.32)'; x.lineWidth = 1.6; for (let i = 0; i < 26; i++) { const yy = r() * 96, xx = r() * 96; x.beginPath(); x.moveTo(xx, yy); x.lineTo(xx + 10 + r() * 16, yy); x.stroke(); } }
+  if (kind === 'soil') for (let i = 0; i < 160; i++) { x.fillStyle = r() < 0.5 ? 'rgba(255,255,255,.18)' : 'rgba(30,20,5,.25)'; x.fillRect(r() * 96, r() * 96, 3, 2); }
+  if (kind === 'rock') { x.strokeStyle = 'rgba(20,20,30,.35)'; x.lineWidth = 2; for (let i = 0; i < 9; i++) { const yy = r() * 96; x.beginPath(); x.moveTo(0, yy); x.lineTo(96, yy + (r() - 0.5) * 30); x.stroke(); } }
+  return c;
+}
+/* 沿 x 方向畫「從 yTop(x) 往下塗滿」的多邊形（畫家演算法：上層先畫、下層後畫蓋上去） */
+function fillBelow(x, W, H, fn, style, step = 6) {
+  x.fillStyle = style; x.beginPath(); x.moveTo(0, H + 2);
+  for (let px = 0; px <= W + step; px += step) x.lineTo(px, fn(Math.min(px, W)));
+  x.lineTo(W + step, H + 2); x.closePath(); x.fill();
+}
+function fillBetween(x, W, topFn, botFn, style, p0 = 0, p1 = W, step = 6) {
+  if (p1 <= p0) return;
+  x.fillStyle = style; x.beginPath();
+  for (let px = p0; px <= p1 + 0.01; px += step) x.lineTo(px, topFn(Math.min(px, p1)));
+  x.lineTo(p1, topFn(p1));
+  for (let px = p1; px >= p0 - 0.01; px -= step) x.lineTo(Math.max(px, p0), botFn(Math.max(px, p0)));
+  x.closePath(); x.fill();
+}
+function arrowTex(color) {
+  const c = document.createElement('canvas'); c.width = 128; c.height = 64; const x = c.getContext('2d');
+  x.strokeStyle = color; x.lineWidth = 12; x.lineCap = 'round'; x.lineJoin = 'round';
+  x.beginPath(); x.moveTo(40, 12); x.lineTo(84, 32); x.lineTo(40, 52); x.stroke();
+  const t = new THREE.CanvasTexture(c); t.wrapS = THREE.RepeatWrapping; t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+/* 地面陰影（讓懸空的剖面塊有落地感） */
+function blobShadow(w, d, y) {
+  const c = document.createElement('canvas'); c.width = c.height = 128; const x = c.getContext('2d');
+  const g = x.createRadialGradient(64, 64, 8, 64, 64, 64); g.addColorStop(0, 'rgba(20,40,60,.38)'); g.addColorStop(1, 'rgba(20,40,60,0)');
+  x.fillStyle = g; x.fillRect(0, 0, 128, 128);
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(w, d), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c), transparent: true, depthWrite: false }));
+  m.rotation.x = -Math.PI / 2; m.position.y = y; scene.add(m); return m;
+}
+
+/* ---------- 標籤（每一幀投影到螢幕上） ---------- */
+function addLabel(html, cls, pos, o = {}) {
+  const div = document.createElement('div'); div.className = 'lbl'; div.innerHTML = `<div class="${cls}">${html}</div>`;
+  if (o.color) div.firstChild.style.setProperty('--c', o.color);
+  if (o.click) div.firstChild.addEventListener('click', o.click);
+  $('labels').appendChild(div);
+  const L = { el: div, pos, max: o.max || 1e9, show: o.show, nrm: o.nrm }; labels.push(L); return L;
+}
+const _v = new THREE.Vector3(), _w = new THREE.Vector3();
+function updateLabels() {
+  const w = innerWidth, h = innerHeight;
+  for (const L of labels) {
+    let ok = L.show === undefined || (typeof L.show === 'function' ? L.show() : L.show);
+    if (ok && L.nrm) ok = _w.copy(camera.position).sub(L.pos).dot(L.nrm) > 0;   // 切面上的標籤：從背面看就藏起來
+    if (ok) { _v.copy(L.pos).project(camera); ok = _v.z < 1 && Math.abs(_v.x) < 1.1 && Math.abs(_v.y) < 1.1 && camera.position.distanceTo(L.pos) < L.max; }
+    L.el.classList.toggle('hide', !ok);
+    if (ok) L.el.style.transform = `translate(${(_v.x * .5 + .5) * w}px,${(-_v.y * .5 + .5) * h}px)`;
+  }
+}
+
+/* ---------- 提示列、說明卡、視角 ---------- */
+let lastSay = '', sayT = -99; const SAYQ = [];
+/* 自動提示排隊：每則至少停留 5 秒，學生才讀得完 */
+function sayAuto(k) { if (U.time - sayT < 5) { if (!SAYQ.includes(k)) SAYQ.push(k); } else say(k); }
+function drainSay() { if (SAYQ.length && U.time - sayT >= 5) say(SAYQ.shift()); }
+function say(k) { if (!MSG[k]) return; lastSay = k; sayT = U.time; const [type, html] = MSG[k], el = $('rule'); el.className = 'glass ' + (type === 'info' ? '' : type); $('ruleTxt').innerHTML = html; }
+function openPanel(key) {
+  const d = INFO[key]; if (!d) return; $('pTitle').textContent = d.t; $('pSub').textContent = d.s;
+  $('pBody').innerHTML = d.b; const p = $('panel'); p.classList.add('open'); p.scrollTop = 0;
+  if (d.after) d.after($('pBody'));
+}
+function flyTo(v, dur = 1.6) {
+  document.querySelectorAll('.vw').forEach(b => b.classList.toggle('active', b.dataset.v === v));
+  const d = VIEWS[v]; if (!d) return;
+  const t = new THREE.Vector3(...d.t), p = new THREE.Vector3(...d.p);
+  gsap.killTweensOf(camera.position); gsap.killTweensOf(controls.target);
+  if (!dur) { camera.position.copy(p); controls.target.copy(t); controls.update(); return; }
+  gsap.to(camera.position, { x: p.x, y: p.y, z: p.z, duration: dur, ease: 'power2.inOut' });
+  gsap.to(controls.target, { x: t.x, y: t.y, z: t.z, duration: dur, ease: 'power2.inOut', onUpdate: () => controls.update() });
+}
+function setupCommonUI(onView) {
+  const cfg = $('cfg'), res = $('res');
+  const fold = () => { const w = innerWidth; cfg.classList.toggle('closed', w < 760); res.classList.toggle('closed', w < 1000); };
+  fold(); let lastW = innerWidth; addEventListener('resize', () => { if (Math.abs(innerWidth - lastW) > 80) { lastW = innerWidth; fold(); } });
+  for (const [a, b] of [[cfg, res], [res, cfg]]) a.querySelector('h3').addEventListener('click', () => { a.classList.toggle('closed'); if (!a.classList.contains('closed') && innerWidth < 1000) b.classList.add('closed'); });
+  document.querySelectorAll('.vw').forEach(b => b.addEventListener('click', () => onView(b.dataset.v)));
+  document.querySelector('#panel .x').addEventListener('click', () => $('panel').classList.remove('open'));
+  document.querySelectorAll('.modal').forEach(m => { m.querySelector('.x').addEventListener('click', () => m.classList.remove('open')); m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); }); });
+  $('credit').addEventListener('click', () => $('credit').classList.toggle('open'));
+}
+function doneLoading() { const ld = $('loading'); ld.classList.add('done'); setTimeout(() => ld.remove(), 700); }
+function onBtns(sel, fn) { document.querySelectorAll(sel).forEach(b => b.addEventListener('click', () => fn(b))); }
+function markOn(sel, test) { document.querySelectorAll(sel).forEach(b => b.classList.toggle('on', !!test(b))); }
+
+/* =====================================================================
+   A1 為什麼需要地下水銀行？（屏東沿海・示意剖面）
+   座標：x 由內陸（−）往海（＋），z 向前（＋＝前方切面），y 向上；高度、深度誇大
+   畫面上的地形、水位、下沉、海水入侵、淹水全部是教學示意；
+   真實數字只放在說明卡和右側圖表（依 事實核實表_v3.md、data/facts_charts.json）
+   ===================================================================== */
+const X0 = -120, X1 = 120, Z0 = -50, Z1 = 50, YB = -60, YT = 12;
+const XW = 50, XS = 58, RZ = 32, SMAX = 3.2, KM = 0.04;   // 海堤、海岸線、河道中心、最大下沉（示意公尺）、x 每單位＝0.04 公里（示意）
+const SIM = {
+  T: [[0.05, 0.15], [0.4, 0.55], [0.86, 1.0]],   // 地下水位下降程度的目標 [抽水量 少／多／超抽][豐水期、枯水期]
+  SINK: 0.26, D0: 0.28,                          // 水位降得比 D0 多，黏土才開始被壓扁（每年公尺，示意）
+  TOE0: 72,                                       // 海水楔形尖端的起始位置（在海裡）
+};
+const ST = { t: 0, speed: 1, playing: false, wet: true, pump: 0, D: 0.05, S: 0, toe: SIM.TOE0, flood: null, said: {}, dirty: true };
+const PONDS = [
+  { x0: -64, x1: -34, z0: -40, z1: -12 }, { x0: -26, x1: 4, z0: -40, z1: -12 }, { x0: 12, x1: 40, z0: -40, z1: -14 },
+  { x0: -64, x1: -34, z0: -4, z1: 18 }, { x0: -26, x1: 4, z0: -4, z1: 18 },
+];
+PONDS.forEach(p => { p.cx = (p.x0 + p.x1) / 2; p.cz = (p.z0 + p.z1) / 2; p.bed = land0(p.cx) - 1.4; p.lvl = land0(p.cx) - 0.45; });
+const WELLS = [{ x: -30, z: -26, p: 0 }, { x: 8, z: -26, p: 1 }, { x: -30, z: 7, p: 3 }, { x: 45, z: -27, p: 2 }, { x: 16, z: 45, p: -1 }];
+const HOUSES = [[-102, -36], [-92, -22], [-106, -6], [-96, 10], [-86, 44], [-62, 43], [-40, 45], [-12, 43], [24, 4], [34, 9], [44, 42], [-80, -42]];
+const OBJ = { sinkers: [], paddles: [], lastS: -1, riverK: 1 };
+
+/* ---------- 地形（示意） ---------- */
+function land0(x) { return x <= XW ? 5.5 - 3.5 * (x - X0) / (XW - X0) : x <= XS ? lerp(2.0, -0.3, (x - XW) / (XS - XW)) : -0.3 - (x - XS) * 0.14; }
+function pondAt(x, z) { for (const p of PONDS) if (x >= p.x0 && x <= p.x1 && z >= p.z0 && z <= p.z1) return p; return null; }
+function chan(x, z) { return x < XS + 8 ? 1 - smooth(0, 8.5, Math.abs(z - RZ)) : 0; }
+function h0(x, z) {
+  const ch = chan(x, z); let y = land0(x);
+  if (x < XW - 2) y += 0.22 * Math.sin(x * 0.07 + z * 0.05) * Math.sin(z * 0.11) * (1 - ch);
+  y -= 1.8 * ch;
+  const p = pondAt(x, z); if (p) y = Math.min(y, p.bed);
+  return y;
+}
+function sinkG(x, z) { return Math.exp(-(((x - 22) / 68) ** 2)) * (1 - smooth(XW + 1, XW + 12, x)) * (0.86 + 0.14 * Math.cos(z * 0.03)); }
+const surfY = (x, z) => h0(x, z) - ST.S * sinkG(x, z);
+/* 地下水位（井裡的水面高度，示意）：抽水井附近降得最多，像一個漏斗 */
+function wtRaw(x) {
+  if (x > XW) return lerp(wtRaw(XW), 0, clamp((x - XW) / (XS - XW), 0, 1));
+  const base = lerp(3.4, 0.5, clamp((x - X0) / (XW - X0), 0, 1)) + (ST.wet ? 0.6 : 0);
+  return base - ST.D * 11 * Math.exp(-(((x - 15) / 52) ** 2));
+}
+/* 地層界面：黏土被壓扁的量合起來＝地面下沉量 */
+function bounds(x, z) {
+  const s = ST.S * sinkG(x, z), dip = -(x - X0) * 0.02;
+  return { surf: surfY(x, z), c1: -3.5 + dip - s, a1: -7.5 + dip - 0.65 * s, c2: -20 + dip - 0.65 * s, a2: -26 + dip - 0.2 * s, c3: -42 + dip - 0.2 * s, a3: -47 + dip };
+}
+
+/* ---------- 3D 場景 ---------- */
+function buildGround(mudT) {
+  const NX = 121, NZ = 51;
+  OBJ.grid = makeGrid(NX, NZ, (i, j) => [X0 + i * 2, Z0 + j * 2], (x, z) => {
+    if (pondAt(x, z)) return [0.32, 0.3, 0.24, 0];
+    if (x > XS) return [0.6, 0.55, 0.44, 0];
+    if (x > XW + 2) return [0.86, 0.79, 0.6, 0];
+    if (chan(x, z) > 0.3) return [0.58, 0.53, 0.43, 0];
+    const f = 0.5 + 0.5 * Math.sin(x * 0.21) * Math.sin(z * 0.17);
+    return [lerp(0.42, 0.56, f), lerp(0.56, 0.6, f), lerp(0.3, 0.36, f), 0];
+  }, blendMat(mudT), 9);
+  const n = OBJ.grid.n, XZ = OBJ.grid.XZ;
+  OBJ.H0 = new Float32Array(n); OBJ.G = new Float32Array(n); OBJ.skip = new Uint8Array(n);
+  for (let k = 0; k < n; k++) { const x = XZ[k * 2], z = XZ[k * 2 + 1]; OBJ.H0[k] = h0(x, z); OBJ.G[k] = sinkG(x, z); OBJ.skip[k] = pondAt(x, z) || chan(x, z) > 0.3 ? 1 : 0; }
+  OBJ.grid.setY((x, z, k) => OBJ.H0[k]);
+  blobShadow(360, 190, YB - 1.5);
+}
+const FW = 1024, FH = 320;
+const pxX = x => (x - X0) / (X1 - X0) * FW, xOf = p => X0 + p / FW * (X1 - X0), pyY = (y, H = FH) => (YT - y) / (YT - YB) * H;
+function pats(x) {
+  return { soil: x.createPattern(makePattern('soil', '#8d7350', 3), 'repeat'), clay: x.createPattern(makePattern('clay', '#7a5a3d', 5), 'repeat'),
+    sand: x.createPattern(makePattern('sand', '#cdbd8c', 7), 'repeat'), sand2: x.createPattern(makePattern('sand', '#b9a97c', 9), 'repeat') };
+}
+function drawLayers(x, W, H, bAt, P) {
+  x.fillStyle = '#cfe3ef'; x.fillRect(0, 0, W, H);
+  const L = k => p => { const b = bAt(p); return pyY(Math.min(b[k], b.surf), H); };
+  fillBelow(x, W, H, L('surf'), P.soil); fillBelow(x, W, H, L('c1'), P.clay); fillBelow(x, W, H, L('a1'), P.sand);
+  fillBelow(x, W, H, L('c2'), P.clay); fillBelow(x, W, H, L('a2'), P.sand); fillBelow(x, W, H, L('c3'), P.clay); fillBelow(x, W, H, L('a3'), P.sand2);
+  // 含水層裡是淡水（淡藍色）
+  fillBetween(x, W, L('a1'), L('c2'), 'rgba(56,160,230,.16)'); fillBetween(x, W, L('a2'), L('c3'), 'rgba(56,160,230,.16)'); fillBetween(x, W, L('a3'), () => H, 'rgba(56,160,230,.16)');
+  // 海水（地面以上）
+  fillBetween(x, W, () => pyY(0, H), p => pyY(Math.min(0, bAt(p).surf), H), 'rgba(40,120,190,.85)', Math.min(W, pxX(XW + 2.5) * W / FW), W);
+}
+function buildFaces() {
+  const F = OBJ.front = canvasTex(FW, FH); F.P = pats(F.ctx);
+  F.face = makeFace(120, t => [lerp(X0, X1, t), Z1, t], F.tex);
+  const B = canvasTex(FW, FH), bp = pats(B.ctx), cacheB = [];
+  for (let p = 0; p <= FW + 6; p += 6) cacheB.push(bounds(xOf(Math.min(p, FW)), Z0));
+  drawLayers(B.ctx, FW, FH, p => cacheB[clamp(Math.round(p / 6), 0, cacheB.length - 1)], bp);
+  OBJ.back = makeFace(120, t => [lerp(X1, X0, t), Z0, 1 - t], B.tex);
+  const col = (x0, sea) => { const C = canvasTex(256, FH), cp = pats(C.ctx), b = bounds(x0, 0); drawLayers(C.ctx, 256, FH, () => b, cp); if (sea) { C.ctx.fillStyle = 'rgba(40,120,190,.85)'; C.ctx.fillRect(0, pyY(0), 256, pyY(b.surf) - pyY(0)); } return C.tex; };
+  OBJ.left = makeFace(50, t => [X0, lerp(Z0, Z1, t), t], col(X0, false));
+  OBJ.right = makeFace(50, t => [X1, lerp(Z1, Z0, t), t], col(X1, true));
+  const bot = new THREE.Mesh(new THREE.PlaneGeometry(X1 - X0, Z1 - Z0), new THREE.MeshBasicMaterial({ color: 0x3b4a5a, side: THREE.DoubleSide }));
+  bot.rotation.x = -Math.PI / 2; bot.position.y = YB; scene.add(bot);
+}
+function faceTop(x, z) {
+  let y = surfY(x, z);
+  if (x > XW + 2.5) y = Math.max(y, 0);
+  if (ST.flood && x <= XW + 1) y = Math.max(y, ST.flood.F);
+  return y;
+}
+function updateFaces() { for (const f of [OBJ.front.face, OBJ.back, OBJ.left, OBJ.right]) f.update(faceTop, YB, YB, YT); }
+
+function waterMat(color, op = 0.9) { return new THREE.MeshStandardMaterial({ color, normalMap: waterN, normalScale: new THREE.Vector2(0.35, 0.35), roughness: 0.2, metalness: 0, transparent: true, opacity: op, envMapIntensity: 0.5 }); }
+function buildWater() {
+  // 海
+  const sw = X1 - (XW + 2.5), sea = new THREE.Mesh(new THREE.PlaneGeometry(sw, Z1 - Z0), waterMat(0x2f7fb0, 0.88));
+  sea.rotation.x = -Math.PI / 2; sea.position.set(X1 - sw / 2, 0, 0); sea.renderOrder = 2; scene.add(sea);
+  // 河（沿 x 流進海裡；水面高度隨季節、下沉每次更新）
+  const N = 64, g = new THREE.PlaneGeometry(XS + 10 - X0, 16, N, 1); g.rotateX(-Math.PI / 2); g.translate((XS + 10 + X0) / 2, 0, RZ);
+  OBJ.riverMat = waterMat(0x5f8f8c, 0.9); OBJ.river = new THREE.Mesh(g, OBJ.riverMat); OBJ.river.renderOrder = 2; scene.add(OBJ.river);
+}
+function updateRiver() {
+  const pa = OBJ.river.geometry.attributes.position, lvl = lerp(0.45, 1.5, clamp(OBJ.riverK, 0, 1.2));
+  for (let i = 0; i < pa.count; i++) { const x = pa.getX(i); pa.setY(i, land0(x) - 1.8 + lvl - ST.S * sinkG(x, RZ)); }
+  pa.needsUpdate = true; OBJ.river.geometry.computeBoundingSphere();
+}
+function sinker(obj, x, z, base) { obj.userData.sk = { base, g: sinkG(x, z) }; OBJ.sinkers.push(obj); return obj; }
+function buildPonds() {
+  const m = waterMat(0x5d8a6a, 0.92), yel = new THREE.MeshStandardMaterial({ color: 0xfacc15, roughness: 0.6 }), wh = new THREE.MeshStandardMaterial({ color: 0xf1f5f9, roughness: 0.5 });
+  for (const p of PONDS) {
+    const w = new THREE.Mesh(new THREE.PlaneGeometry(p.x1 - p.x0 - 0.6, p.z1 - p.z0 - 0.6), m); w.rotation.x = -Math.PI / 2; w.position.set(p.cx, p.lvl, p.cz); w.renderOrder = 2; scene.add(sinker(w, p.cx, p.cz, p.lvl));
+    const g = new THREE.Group(); g.position.set(p.cx + 6, p.lvl + 0.15, p.cz + 3);
+    const fl = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.45, 1.1), yel); g.add(fl);
+    const piv = new THREE.Group(); piv.position.set(0, 0.2, 1.1); g.add(piv);
+    const wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.7, 2.2, 6), wh); wheel.rotation.z = Math.PI / 2; piv.add(wheel);
+    OBJ.paddles.push(piv); scene.add(sinker(g, p.cx, p.cz, g.position.y));
+  }
+}
+function buildWells() {
+  const wall = new THREE.MeshStandardMaterial({ color: 0xdbe4ea, roughness: 0.8 }), roof = new THREE.MeshStandardMaterial({ color: 0x2563eb, roughness: 0.6 }), pipe = new THREE.MeshStandardMaterial({ color: 0x64748b, roughness: 0.5, metalness: 0.3 });
+  const drops = [], N = 14;
+  for (const w of WELLS) {
+    const y0 = h0(w.x, w.z), shed = new THREE.Group();
+    const b = new THREE.Mesh(new THREE.BoxGeometry(3, 2.2, 2.6), wall); b.position.y = 1.1; shed.add(b);
+    const r = new THREE.Mesh(new THREE.BoxGeometry(3.5, 0.3, 3.1), roof); r.position.y = 2.35; shed.add(r);
+    shed.position.set(w.x - 2.6, y0, w.z); scene.add(sinker(shed, w.x, w.z, y0));
+    // 井管固定在深深的地底，不跟著地面下沉（下沉後看起來像從地面長出來）
+    const c = new THREE.Mesh(new THREE.CylinderGeometry(0.38, 0.38, 4.2, 10), pipe); c.position.set(w.x, y0 + 0.5, w.z); scene.add(c);
+    if (w.p >= 0) {
+      const p = PONDS[w.p], tx = clamp(w.x, p.x0 + 3, p.x1 - 3), tz = clamp(w.z, p.z0 + 3, p.z1 - 3), dx = tx - w.x, dz = tz - w.z, L = Math.hypot(dx, dz) || 1;
+      const o = new THREE.Vector3(w.x + dx / L * 1.6, y0 + 2.4, w.z + dz / L * 1.6);
+      const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 1.6, 6), pipe); arm.rotation.z = Math.PI / 2; arm.rotation.y = -Math.atan2(dz, dx); arm.position.set(w.x + dx / L * 0.8, y0 + 2.4, w.z + dz / L * 0.8); scene.add(arm);
+      w.o = o; w.t = new THREE.Vector3(tx, p.lvl, tz); w.pond = p;
+      for (let i = 0; i < N; i++) drops.push({ w, i });
+    }
+  }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(drops.length * 3), 3)); g.setAttribute('color', new THREE.BufferAttribute(new Float32Array(drops.length * 3), 3));
+  OBJ.spout = new THREE.Points(g, new THREE.PointsMaterial({ size: 0.9, vertexColors: true, transparent: true, opacity: 0.9, depthWrite: false })); OBJ.spout.userData.drops = drops; scene.add(OBJ.spout);
+}
+function updateSpout() {
+  const d = OBJ.spout.userData.drops, pa = OBJ.spout.geometry.attributes.position, ca = OBJ.spout.geometry.attributes.color, sp = 0.5 + ST.pump * 0.35;
+  for (let k = 0; k < d.length; k++) {
+    const { w, i } = d[k], u = (U.time * sp + i / 14) % 1, ty = w.pond.lvl - ST.S * sinkG(w.pond.cx, w.pond.cz);
+    pa.setXYZ(k, lerp(w.o.x, w.t.x, u), lerp(w.o.y, ty, u * u) + 1.4 * u * (1 - u), lerp(w.o.z, w.t.z, u));
+    const salty = saltAt(w.x);
+    ca.setXYZ(k, salty ? 0.98 : 0.85, salty ? 0.55 : 0.93, salty ? 0.3 : 1);
+  }
+  pa.needsUpdate = true; ca.needsUpdate = true; OBJ.spout.material.opacity = 0.45 + ST.pump * 0.25;
+}
+const saltAt = x => ST.toe < x - 4;   // 井的濾管所在的第 2 含水層，海水楔形已經到了這裡
+function buildHouses() {
+  const r = rng(11), cols = [0xf8fafc, 0xfde68a, 0xe2e8f0, 0xfecaca, 0xd9f99d], roofM = new THREE.MeshStandardMaterial({ color: 0xb45309, roughness: 0.7 });
+  for (const [x, z] of HOUSES) {
+    const y0 = h0(x, z), g = new THREE.Group();
+    const b = new THREE.Mesh(new THREE.BoxGeometry(4.2, 2.8, 3.4), new THREE.MeshStandardMaterial({ color: cols[r() * cols.length | 0], roughness: 0.8 })); b.position.y = 1.4; g.add(b);
+    const rf = new THREE.Mesh(new THREE.ConeGeometry(3.2, 1.6, 4), roofM); rf.position.y = 3.6; rf.rotation.y = Math.PI / 4; rf.scale.set(1.05, 1, 0.85); g.add(rf);
+    g.position.set(x, y0, z); g.rotation.y = r() * 0.6 - 0.3; scene.add(sinker(g, x, z, y0));
+  }
+}
+function buildSeawall() {
+  const m = new THREE.MeshStandardMaterial({ color: 0xc9c5bb, roughness: 0.85 }), gate = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.6 });
+  for (const [za, zb] of [[Z0, RZ - 8], [RZ + 8, Z1]]) {
+    const L = zb - za, b = new THREE.Mesh(new THREE.BoxGeometry(3, 4.6, L), m), zc = (za + zb) / 2; b.position.set(XW + 1, 2.9, zc); scene.add(sinker(b, XW + 1, zc, 2.9));
+  }
+  const gt = new THREE.Mesh(new THREE.BoxGeometry(2, 1.2, 16), gate); gt.position.set(XW + 1, 4.6, RZ); scene.add(sinker(gt, XW + 1, RZ, 4.6));
+  for (const dz of [-8, 8]) { const p = new THREE.Mesh(new THREE.BoxGeometry(2.4, 5.5, 1.2), gate); p.position.set(XW + 1, 2.6, RZ + dz); scene.add(sinker(p, XW + 1, RZ + dz, 2.6)); }
+}
+function buildFlood() {
+  const w = XW + 1 - X0, m = waterMat(0x6f8a86, 0.86);
+  OBJ.flood = new THREE.Mesh(new THREE.PlaneGeometry(w, Z1 - Z0), m); OBJ.flood.rotation.x = -Math.PI / 2; OBJ.flood.position.set(X0 + w / 2, 0, 0); OBJ.flood.visible = false; OBJ.flood.renderOrder = 3; scene.add(OBJ.flood);
+  const n = 1400, pos = new Float32Array(n * 3), r = rng(5);
+  for (let i = 0; i < n; i++) pos.set([lerp(X0, X1, r()), r() * 70, lerp(Z0, Z1, r())], i * 3);
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  OBJ.rain = new THREE.Points(g, new THREE.PointsMaterial({ color: 0xe0f2fe, size: 0.7, transparent: true, opacity: 0.75, depthWrite: false })); OBJ.rain.visible = false; scene.add(OBJ.rain);
+}
+function buildRefLine() {
+  const pts = []; for (let x = X0; x <= XW + 2; x += 2) pts.push(new THREE.Vector3(x, h0(x, Z1) + 0.06, Z1 + 0.25));
+  const l = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineDashedMaterial({ color: 0xffffff, dashSize: 2.2, gapSize: 1.4 }));
+  l.computeLineDistances(); l.visible = false; scene.add(l); OBJ.ref = l;
+}
+
+/* ---------- 前方切面（動態畫布） ---------- */
+function drawFront() {
+  const F = OBJ.front, x = F.ctx, W = FW, H = FH, STEP = 6, cache = [];
+  for (let p = 0; p <= W + STEP; p += STEP) cache.push(bounds(xOf(Math.min(p, W)), Z1));
+  const bAt = p => cache[clamp(Math.round(p / STEP), 0, cache.length - 1)];
+  drawLayers(x, W, H, bAt, F.P);
+  // 海水楔形：三個含水層各一個（第 2 含水層有很多水井，推進最多）
+  const toes = [lerp(SIM.TOE0, ST.toe, 0.75), ST.toe, lerp(SIM.TOE0, ST.toe, 0.5)], keys = [['a1', 'c2'], ['a2', 'c3'], ['a3', null]];
+  for (let k = 0; k < 3; k++) {
+    const toe = toes[k], xs = toe + 34, p0 = pxX(toe); if (p0 >= W) continue;
+    const top = p => { const b = bAt(p); return pyY(Math.min(b[keys[k][0]], b.surf)); };
+    const bot = p => { const b = bAt(p); return keys[k][1] ? pyY(Math.min(b[keys[k][1]], b.surf)) : H; };
+    const iface = p => lerp(bot(p), top(p), clamp((xOf(p) - toe) / (xs - toe), 0, 1));
+    fillBetween(x, W, iface, bot, 'rgba(220,60,40,.58)', Math.max(0, p0), W, 4);
+  }
+  // 淹水
+  if (ST.flood) fillBetween(x, W, () => pyY(ST.flood.F), p => pyY(Math.min(ST.flood.F, bAt(p).surf)), 'rgba(96,128,132,.9)', 0, pxX(XW + 1), 4);
+  // 靠前面的那口井：井管伸到第 2 含水層
+  const b16 = bounds(16, Z1), wx = pxX(16), wTop = pyY(h0(16, Z1) + 2.6), wBot = pyY(b16.c3 + 1.5), sTop = pyY(b16.a2 - 2);
+  x.fillStyle = '#475569'; x.fillRect(wx - 4, wTop, 8, wBot - wTop);
+  x.fillStyle = '#cbd5e1'; for (let y = sTop; y < wBot - 2; y += 7) x.fillRect(wx - 4, y, 8, 3);
+  x.fillStyle = saltAt(16) ? '#fdba74' : '#e0f2fe';
+  for (let k = 0; k < 5; k++) { const y = wBot - ((U.time * (40 + ST.pump * 40) + k * 34) % (wBot - wTop)); x.fillRect(wx - 1.5, y, 3, 9); }
+  // 海平面（紅色虛線）、地下水位（藍色虛線）
+  x.setLineDash([9, 8]); x.lineWidth = 2.5; x.strokeStyle = 'rgba(220,38,38,.95)'; x.beginPath(); x.moveTo(0, pyY(0)); x.lineTo(pxX(XS), pyY(0)); x.stroke();
+  x.beginPath(); for (let p = 0; p <= pxX(XS); p += 4) { const xx = xOf(p), y = pyY(Math.min(wtRaw(xx), bAt(p).surf - 0.3)); p ? x.lineTo(p, y) : x.moveTo(p, y); }
+  x.setLineDash([18, 10]); x.lineWidth = 8; x.strokeStyle = 'rgba(255,255,255,.9)'; x.stroke(); x.lineWidth = 4.5; x.strokeStyle = '#0284c7'; x.stroke(); x.setLineDash([]);
+  x.font = `800 15px ${FONT}`; x.fillStyle = 'rgba(255,255,255,.92)'; x.textAlign = 'right'; x.fillText('示意圖：高度、深度誇大', W - 10, H - 10); x.textAlign = 'left';
+  F.tex.needsUpdate = true;
+}
+
+/* =====================================================================
+   模擬（示意）：抽水 → 地下水位下降 → 黏土壓密、地面下沉；水位低於海平面 → 海水楔形往內陸推進
+   ===================================================================== */
+function step(dt) {   // dt：年
+  const T = SIM.T[ST.pump][ST.wet ? 0 : 1];
+  ST.D += (T - ST.D) * (1 - Math.exp(-0.9 * dt));
+  if (ST.S < SMAX) ST.S = Math.min(SMAX, ST.S + SIM.SINK * Math.max(0, ST.D - SIM.D0) * dt);
+  const toeT = SIM.TOE0 - ST.D * 120, k = toeT < ST.toe ? 0.32 : 0.07;   // 海水跑進來快，退回去慢
+  ST.toe += (toeT - ST.toe) * (1 - Math.exp(-k * dt));
+  ST.t += dt; ST.dirty = true;
+  const s = ST.said;
+  if (!s.wtLow && wtRaw(15) < -0.5) { s.wtLow = 1; sayAuto('wtLow'); }
+  if (!s.intrude && ST.toe < XS - 12) { s.intrude = 1; sayAuto('intrude'); }
+  if (!s.sink && ST.S > 0.6) { s.sink = 1; sayAuto('sink'); }
+  if (!s.tryFlood && ST.S > 2.0) { s.tryFlood = 1; sayAuto('tryFlood'); }
+  if (!s.max && ST.S >= SMAX - 0.01) { s.max = 1; sayAuto('max'); }
+}
+function floodFrac() {
+  if (!ST.flood) return 0; let n = 0, w = 0; const XZ = OBJ.grid.XZ, F = ST.flood.F;
+  for (let k = 0; k < OBJ.grid.n; k += 2) { if (XZ[k * 2] > XW || OBJ.skip[k]) continue; n++; if (OBJ.H0[k] - ST.S * OBJ.G[k] < F) w++; }
+  return n ? w / n : 0;
+}
+function storm() {
+  if (ST.flood) return;
+  ST.flood = { F: 0.5, t: 0 }; OBJ.flood.visible = true; OBJ.rain.visible = true;
+  say('storm'); flyTo('overview'); $('btnStorm').disabled = true;
+}
+function stepFlood(dt) {   // dt：真實秒數（颱風是幾天內的事，不跟著「一秒一年」快轉）
+  const f = ST.flood, FLOOR = 0.25; f.t += dt;
+  if (f.t < 4) f.F = lerp(f.F, 4.8, 1 - Math.exp(-1.6 * dt));                    // 下大雨，水漲起來
+  else if (f.F > FLOOR + 0.03) f.F = FLOOR + (f.F - FLOOR) * Math.exp(-0.32 * dt); // 比海平面高的水，流進河裡、海裡
+  else f.F -= 0.012 * dt;                                                          // 比海平面低：只能靠抽水機慢慢抽
+  if (f.t > 4.5) OBJ.rain.visible = false;
+  const fr = floodFrac();
+  if (f.t > 12 && !f.rep) { f.rep = 1; if (fr > 0.02) { say('floodStay'); setTimeout(() => { if (lastSay === 'floodStay') say('bridge'); }, 8000); } else say('floodGone'); }
+  if (f.t > 45 || (f.t > 12 && fr < 0.003)) endFlood();
+}
+function endFlood() { ST.flood = null; OBJ.flood.visible = false; OBJ.rain.visible = false; ST.dirty = true; $('btnStorm').disabled = false; if (lastSay === 'floodGone' && ST.S < 1) setTimeout(() => { if (lastSay === 'floodGone') say('bridge'); }, 5000); }
+function setPump(p) {
+  const was = ST.pump; ST.pump = p; markOn('#pumpOpts .opt', b => +b.dataset.p === p);
+  if (p < was && ST.S > 0.3) say('recover'); else say('pump' + p);
+}
+function setSeason(wet) { ST.wet = wet; markOn('#seaOpts .opt', b => (b.dataset.sea === 'wet') === wet); ST.dirty = true; say(wet ? 'wet' : 'dry'); }
+function setPlay(on) { ST.playing = on; const b = $('btnPlay'); b.textContent = on ? '❚❚ 暫停' : '▶ 播放'; b.classList.toggle('go', !on); if (on && ST.t < 0.01) say(ST.pump === 2 ? 'pump2' : 'play'); }
+function reset() {
+  if (ST.flood) endFlood();
+  Object.assign(ST, { t: 0, D: 0.05, S: 0, toe: SIM.TOE0, said: {}, dirty: true }); SAYQ.length = 0;
+  setPlay(false); setPump(0); setSeason(true); say('start');
+}
+
+/* ---------- 提示列 ---------- */
+const MSG = {
+  start: ['info', '<b>任務：</b>沿海的養殖魚塭要用很多淡水，很多人抽地下水來用。先把抽水量調到「<b>超抽</b>」，再按「▶ 播放」，看看地底和地面會發生什麼事。'],
+  play: ['info', '時間開始走了（1 秒＝1 年，示意）。看前面的剖面：<b>藍色虛線</b>是地下水位，<b>紅色虛線</b>是海平面的高度。'],
+  pump0: ['info', '抽水量「少」：抽走的水，雨水補得回來，地下水位留在海平面上面。'],
+  pump1: ['info', '抽水量「多」：地下水位開始往下降。看看它會不會掉到紅色虛線（海平面）下面。'],
+  pump2: ['warn', '「超抽」：抽走的水比雨水補進來的多很多，地下水位會一直往下掉！'],
+  wtLow: ['warn', '地下水位掉到<b>海平面下面</b>了！海水比淡水重，淡水的力量頂不住，海水就從海邊鑽進地底。'],
+  intrude: ['warn', '看剖面上紅色的楔形：<b>海水沿著含水層往陸地推進</b>。靠海的水井，抽出來的水變鹹了（井口噴出的水變成橘色）。'],
+  sink: ['warn', '<b>地面開始下沉了！</b>和白色虛線「原本的地面」比一比。黏土層的水被抽走，黏土被壓扁，地面就跟著往下沉。井管好像從地面「長」了出來。'],
+  tryFlood: ['warn', '有些地面已經比海平面還低了。按「<b>颱風大雨</b>」，看看雨水退不退得掉。'],
+  max: ['warn', '下沉已經很嚴重了（示意）。試試把抽水量調回「少」：什麼回得來？什麼回不來？'],
+  storm: ['info', '颱風帶來大雨，雨水淹過地面……看看水多久才退。'],
+  floodGone: ['good', '地面夠高，雨水很快就流進河裡、流進海裡，淹水退了。如果地面沉下去了呢？讓它「超抽」幾年再試一次。'],
+  floodStay: ['warn', '<b>水退不掉了！</b>下沉的地面比海平面還低，水沒辦法自己流進海裡，只能靠抽水機慢慢抽。'],
+  bridge: ['good', '<b>想一想：</b>雨季的水很多，卻很快流進海裡；枯水期水不夠，只好抽地下水。<b>有沒有辦法把雨季的水存起來？→ 這就是「地下水銀行」！</b>下一站去看看。'],
+  recover: ['info', '抽水減少了。地下水位會慢慢回升，海水也會慢慢退回去；可是<b>下沉的地面回不來了</b>。'],
+  wet: ['info', '豐水期：河水又寬又滿，雨水滲進地底，地下水位比較高。'],
+  dry: ['info', '枯水期：河水只剩細細一條，補進地底的水變少，地下水位比較低。'],
+};
+
+/* ---------- 右側面板 ---------- */
+function drawChart(d) {
+  const W = 254, H = 122, base = 96, top = 16, max = 112, n = d.values.length, bw = (W - 10) / n;
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${d.title}"><line x1="4" x2="${W - 4}" y1="${base}" y2="${base}" stroke="#94a3b8" stroke-width="1.5"/>`;
+  d.values.forEach((v, i) => {
+    const h = v / max * (base - top), w = bw * 0.62, x = 5 + i * bw + (bw - w) / 2, yr = d.years_roc[i], hot = yr === 112;
+    s += `<rect x="${x.toFixed(1)}" y="${(base - h).toFixed(1)}" width="${w.toFixed(1)}" height="${Math.max(h, 1).toFixed(1)}" rx="3" fill="${hot ? '#d97706' : '#0284c7'}"/>`;
+    s += `<text x="${(x + w / 2).toFixed(1)}" y="${(base - h - 4).toFixed(1)}" text-anchor="middle" font-size="11.5" font-weight="900" fill="${hot ? '#b45309' : '#0d2238'}">${v}</text>`;
+    s += `<text x="${(x + w / 2).toFixed(1)}" y="${base + 14}" text-anchor="middle" font-size="11.5" font-weight="800" fill="#3a536d">${yr}</text>`;
+  });
+  s += `<text x="${W - 4}" y="${H - 2}" text-anchor="end" font-size="10.5" font-weight="700" fill="#64748b">民國年</text></svg>`;
+  $('chart').innerHTML = `<div class="cap">真實資料：屏東顯著下陷面積（平方公里）</div>` + s;
+  $('chartSrc').innerHTML = `顯著下陷＝一年下沉超過 3 公分的面積。<b>111、112 年下陷面積又變大了</b>，113 年才回到 0。<br>出處：${d.source}`;
+}
+function updateUI() {
+  const yr = Math.floor(ST.t), w = wtRaw(15), km = Math.max(0, XS - ST.toe) * KM;
+  $('rYear').textContent = `第 ${yr} 年（示意）`;
+  const s = $('rSea'); s.textContent = ST.wet ? '豐水期' : '枯水期'; s.style.color = ST.wet ? '#0369a1' : '#b45309';
+  const r = $('rWt'); r.textContent = w >= 0 ? `海平面上 ${w.toFixed(1)} 公尺` : `海平面下 ${(-w).toFixed(1)} 公尺`; r.classList.toggle('alert', w < 0);
+  $('bWt').style.width = clamp((w + 10) / 13, 0.02, 1) * 100 + '%';
+  $('rSink').textContent = ST.S < 0.05 ? '還沒有下沉' : `最多 ${ST.S.toFixed(1)} 公尺`; $('bSink').style.width = ST.S / SMAX * 100 + '%';
+  $('rSalt').textContent = km < 0.05 ? '海水還在海邊' : `往陸地 ${km.toFixed(1)} 公里`; $('rSalt').classList.toggle('alert', km > 0.05); $('bSalt').style.width = clamp(km / 5.5, 0, 1) * 100 + '%';
+  const fr = floodFrac(), fl = $('rFlood');
+  fl.textContent = !ST.flood ? '沒有淹水' : fr < 0.003 ? '水退了' : `${Math.round(fr * 100)}%` + (ST.flood.t > 12 ? '・退不掉' : ST.flood.t > 4 ? '・退水中' : '・下大雨');
+  fl.classList.toggle('alert', !!ST.flood && ST.flood.t > 12 && fr > 0.02);
+  $('resMini').textContent = `第 ${yr} 年・下沉 ${ST.S.toFixed(1)} m`;
+  $('cfgMini').textContent = (ST.wet ? '豐水期・' : '枯水期・') + ['抽得少', '抽得多', '超抽'][ST.pump] + (ST.playing ? '' : '・暫停');
+  $('stormTip').textContent = ST.flood ? '大雨中…' : '看看雨水退不退得掉';
+}
+
+/* ---------- 標籤與說明卡（內容與出處見 事實核實表_v3.md） ---------- */
+const FN = new THREE.Vector3(0, 0, 1);
+function buildLabels() {
+  const zf = Z1 + 0.4, b = bounds(-70, Z1);
+  addLabel('<b>魚</b>養殖魚塭', 'pin', new THREE.Vector3(PONDS[1].cx, 8, PONDS[1].cz), { max: 520, click: () => openPanel('ponds'), color: '#0369a1' });
+  addLabel('<b>井</b>抽水井', 'pin', new THREE.Vector3(WELLS[1].x, 9, WELLS[1].z), { max: 520, click: () => openPanel('wells'), color: '#475569' });
+  addLabel('<b>堤</b>海堤', 'pin', new THREE.Vector3(XW + 1, 9, -24), { max: 560, click: () => openPanel('seawall'), color: '#64748b' });
+  addLabel('<b>黏</b>黏土層（阻水層）', 'pin', new THREE.Vector3(-70, (b.c2 + b.a2) / 2, zf), { max: 600, click: () => openPanel('clay'), color: '#92400e', nrm: FN });
+  addLabel('含水層：砂和礫石之間裝滿了水', 'geo', new THREE.Vector3(-30, (b.a2 + b.c3) / 2, zf), { max: 420, nrm: FN });
+  OBJ.lblSalt = addLabel('<b>鹹</b>海水（鹹水）', 'pin', new THREE.Vector3(100, -34, zf), { max: 620, click: () => openPanel('wedge'), color: '#b91c1c', nrm: FN });
+  OBJ.lblWt = addLabel('<b>水</b>地下水位', 'pin', new THREE.Vector3(-50, 4, zf), { max: 620, click: () => openPanel('wt'), color: '#0284c7', nrm: FN });
+  addLabel('海平面的高度', 'geo salt', new THREE.Vector3(-88, -0.2, zf), { max: 420, nrm: FN });
+  addLabel('原本的地面', 'geo ref', new THREE.Vector3(-8, h0(-8, Z1) + 1.6, zf), { max: 520, show: () => ST.S > 0.15 });
+  addLabel('這口井抽到鹹水了！', 'geo salt', new THREE.Vector3(WELLS[3].x, 10, WELLS[3].z), { max: 520, show: () => saltAt(WELLS[3].x) });
+  addLabel('河川（流進海裡）', 'geo water', new THREE.Vector3(-80, 5.5, RZ), { max: 700 });
+  addLabel('海', 'geo water', new THREE.Vector3(96, 1.5, -10), { max: 800 });
+  addLabel('示意圖：高度、深度誇大', 'geo exg', new THREE.Vector3(X1 - 30, YB + 4, zf), { max: 700, nrm: FN });
+}
+function updateDynLabels() {
+  OBJ.lblWt.pos.y = Math.min(wtRaw(-50), surfY(-50, Z1) - 0.3) + 1.2;
+  const sx = clamp(ST.toe + 22, -60, 100), b = bounds(sx, Z1); OBJ.lblSalt.pos.x = sx; OBJ.lblSalt.pos.y = (Math.min(b.a2, b.surf) + b.c3) / 2;
+}
+const SRC = {
+  wra114: '經濟部水利署〈114 年度地層下陷檢測結果說明〉（115.03.16）p.2。',
+  wraDef: '經濟部水利署「地層下陷」網頁：顯著下陷是年平均下陷速率超過 3 公分的面積。',
+  gv: '遠見雜誌報導（引述 1998 年的資料）。',
+  ting: '丁澈士等（2021）〈地下水人工補注與伏流水開發之回顧與前瞻〉，《土木水利》48(6) p.48：林邊溪下游地下水超抽，造成地層下陷、海水入侵。',
+  demo: '畫面上的地層、水位、下沉量、海水入侵距離和淹水是簡化的教學示意，不是實測值。',
+};
+const INFO = {
+  station: { t: '本站重點：為什麼需要地下水銀行？', s: '屏東沿海（佳冬、林邊）・示意剖面', b: `
+    <p>屏東沿海有很多養殖魚塭，要用很多淡水。河水在雨季很多、枯水期很少，所以大家打井，抽地下水來用。</p>
+    <p>地下水就像存在銀行裡的錢：雨水滲進地底是「存款」，抽地下水是「提款」。<b>提款一直比存款多，就會「透支」。</b></p>
+    <div class="keys"><span>透支 ①</span><span>地下水位下降，掉到海平面下面</span><span>透支 ②</span><span>海水鑽進地底（海水入侵），井水變鹹</span><span>透支 ③</span><span>黏土被壓扁，地面下沉（地層下陷）</span><span>透支 ④</span><span>地面比海還低，大雨後水退不掉</span></div>
+    <div class="box2 observe"><b>👀 畫面觀察</b>把抽水量調到「超抽」再播放。地下水位（藍色虛線）掉到海平面（紅色虛線）下面以後，紅色的海水楔形往哪裡移動？地面和白色虛線「原本的地面」差了多少？</div>
+    <div class="box2 think"><b>💡 想一想 1</b>為什麼地下水位掉到海平面下面，海水就會跑進地底？
+      <details><summary>看參考答案</summary><p>本來陸地的地下水位比海平面高，淡水往海的方向推，把海水擋在海邊。水位掉到海平面下面，淡水推不動了，比較重的海水就沿著含水層鑽進陸地底下。</p></details></div>
+    <div class="box2 think"><b>💡 想一想 2</b>先「超抽」讓地面下沉，再把抽水量調回「少」。地下水位、海水、地面，哪些會回來？哪些回不來？
+      <details><summary>看參考答案</summary><p>地下水位會慢慢回升，海水也會慢慢被推回去（比較慢）。可是黏土被壓扁以後很難再膨脹回來，下沉的地面回不來了。所以要在下沉以前就少抽一點。</p></details></div>
+    <div class="box2 think"><b>💡 想一想 3</b>為什麼地面下沉的地方，颱風大雨之後水很難退？
+      <details><summary>看參考答案</summary><p>水往低處流。地面比海平面還低，雨水沒辦法自己流進海裡，只能靠抽水機慢慢抽走。</p></details></div>
+    <div class="keys"><span>顯著下陷</span><span>一年下沉超過 3 公分的面積（水利署的定義）。</span>
+      <span>屏東</span><span>顯著下陷面積民國 108～113 年依序是 0.9、0.9、0、68.5、105.9、0 平方公里。111、112 年下陷面積又變大，113 年才回到 0。</span>
+      <span>報導引述</span><span>1998 年（民國 87 年）的資料：林邊、佳冬一帶累積下陷超過 3 公尺。</span></div>
+    <div class="box2 observe"><b>➜ 下一站</b>雨季的水很多，卻很快流進海裡。有沒有辦法把雨季的水存起來，留到枯水期再用？這就是「<b>地下水銀行</b>」。</div>
+    <div class="src">${SRC.wra114}<br>${SRC.wraDef}<br>${SRC.gv}<br>${SRC.ting}<br>${SRC.demo}</div>` },
+  ponds: { t: '養殖魚塭', s: '沿海常見的土地利用', b: `
+    <p>屏東沿海有很多養殖魚塭。魚塭要常常補水、換水，需要很多淡水。</p>
+    <p>河水在枯水期很少，所以魚塭旁邊常常會打井，抽地下水補進魚塭。抽的人多、抽得久，地下水就被「提款」得太多。</p>
+    <div class="box2 think"><b>💡 想一想</b>一口井抽一點水沒關係，為什麼「很多口井一直抽」就會出問題？
+      <details><summary>看參考答案</summary><p>地下水補回來的速度有限。很多井一起抽，抽走的比補進來的多，地下水位就會一直下降。</p></details></div>
+    <div class="src">${SRC.ting}<br>魚塭、水井的位置和數量是示意。</div>` },
+  wells: { t: '抽水井', s: '從地底的含水層把水抽上來', b: `
+    <p>水井的管子插到地底的<b>含水層</b>（砂和礫石之間裝滿了水的地層），用抽水機把水抽上來。</p>
+    <p>看前面的剖面：最前面那口井的管子，一直伸到第 2 含水層。抽太多，地下水位下降，海水跑進含水層，靠海的井就會抽到鹹水。</p>
+    <p>地面下沉的時候，井管固定在深深的地底，不會跟著沉，所以看起來像從地面「長」出來。</p>
+    <div class="src">${SRC.demo}</div>` },
+  wedge: { t: '海水入侵（海水楔形）', s: '海水從海邊鑽進陸地底下', b: `
+    <p>海水裡有鹽，比淡水重。在海邊的地底，海水會像一塊<b>楔形</b>（一頭厚、一頭尖的三角形），從下面鑽進含水層。</p>
+    <p>平常陸地的地下水位比海平面高，淡水往海的方向推，把海水擋在海邊。抽太多地下水，水位掉到海平面下面，海水就往陸地推進。</p>
+    <p>含水層變鹹以後，井水不能喝、不能養魚，也不能灌溉，要很久才會恢復。</p>
+    <div class="box2 think"><b>💡 想一想</b>為什麼紅色的楔形在第 2 含水層跑得最遠？
+      <details><summary>看參考答案</summary><p>水井的管子大多伸到第 2 含水層，這一層的水被抽得最多，水壓降得最低，海水就最容易跑進來。</p></details></div>
+    <div class="src">${SRC.ting}<br>楔形的大小和位置是示意。</div>` },
+  clay: { t: '黏土層為什麼會被壓扁？', s: '地面下沉的原因', b: `
+    <p>黏土的顆粒很細，水很難流過，所以又叫「<b>阻水層</b>」。黏土的小孔隙裡也含著水，這些水幫忙撐住上面地層的重量。</p>
+    <p>含水層的水被抽走、水壓降低，黏土裡的水就被慢慢擠出來，黏土被壓扁，地面就跟著往下沉。這就是<b>地層下陷</b>。</p>
+    <p>被壓扁的黏土，就算之後地下水回升，也很難再膨脹回來。看剖面：地面下沉的時候，咖啡色的黏土層變薄了。</p>
+    <div class="src">${SRC.ting}<br>${SRC.demo}</div>` },
+  seawall: { t: '海堤', s: '擋住海水的牆', b: `
+    <p>沿海的地面下沉以後，有的地方比海平面還低，要靠海堤擋住海水。</p>
+    <p>可是海堤也擋住了陸地上的水：下大雨的時候，比海平面還低的地方，雨水沒辦法自己流出去，只能靠水門和抽水機慢慢排。</p>
+    <div class="src">海堤、水門的位置和大小是示意。</div>` },
+  wt: { t: '地下水位', s: '剖面上的藍色虛線', b: `
+    <p>在含水層打一口井，井裡的水面會停在一個高度，這就是<b>地下水位</b>。</p>
+    <p>雨水滲進地底，地下水位就上升（存款）；抽水，地下水位就下降（提款）。很多井一起抽，井附近的水位會降得特別低，像一個漏斗。</p>
+    <p>紅色虛線是海平面的高度。地下水位掉到紅線下面，就是危險的訊號。</p>
+    <div class="box2 think"><b>💡 想一想</b>切換豐水期、枯水期，地下水位有什麼不同？為什麼？
+      <details><summary>看參考答案</summary><p>豐水期雨水多，滲進地底的水多，地下水位比較高；枯水期補進來的水少，水位比較低。枯水期如果還一直抽，水位會降得更快。</p></details></div>
+    <div class="src">${SRC.demo}</div>` },
+};
+
+/* ---------- 視角 ---------- */
+const VIEWS = {
+  overview: { t: [4, -12, 0], p: [-50, 215, 265] },
+  section: { t: [0, -24, 50], p: [0, -14, 300] },
+  ponds: { t: [-10, 2, -12], p: [-58, 60, 78] },
+  coast: { t: [62, -2, 10], p: [178, 52, 140] },
+  sink: { t: [10, 1, 48], p: [-76, 15, 118] },
+};
+
+/* ---------- 每一幀 ---------- */
+let uiT = 0, cvT = 0;
+function frame() {
+  const dt = Math.min(clock.getDelta(), 0.1); U.time += dt;
+  if (ST.playing) step(dt * ST.speed);
+  if (ST.flood) stepFlood(dt);
+  drainSay();
+  waterN.offset.set(U.time * 0.01, U.time * 0.007);
+  OBJ.riverK = lerp(OBJ.riverK, ST.flood ? 1.2 : ST.wet ? 1 : 0, 1 - Math.exp(-2 * dt));
+  OBJ.riverMat.color.setHex(ST.flood ? 0x8a7a55 : ST.wet ? 0x4a8fa8 : 0x3f8fa0);
+  for (const p of OBJ.paddles) p.rotation.x += dt * 5;
+  updateSpout();
+  if (OBJ.rain.visible) { const pa = OBJ.rain.geometry.attributes.position; for (let i = 0; i < pa.count; i++) { let y = pa.getY(i) - dt * 70; if (y < 0) y += 70; pa.setY(i, y); } pa.needsUpdate = true; }
+  if (U.time - cvT > 0.08) {
+    cvT = U.time;
+    if (Math.abs(ST.S - OBJ.lastS) > 1e-4) {
+      OBJ.lastS = ST.S; OBJ.grid.setY((x, z, k) => OBJ.H0[k] - ST.S * OBJ.G[k]);
+      for (const o of OBJ.sinkers) o.position.y = o.userData.sk.base - ST.S * o.userData.sk.g;
+      OBJ.ref.visible = ST.S > 0.05;
+    }
+    if (ST.flood) OBJ.flood.position.y = ST.flood.F;
+    updateRiver(); updateFaces(); drawFront(); updateDynLabels(); ST.dirty = false;
+  }
+  const t = controls.target; t.set(clamp(t.x, -140, 140), clamp(t.y, -60, 30), clamp(t.z, -70, 70));
+  controls.update(); updateLabels();
+  if (U.time - uiT > 0.12) { uiT = U.time; updateUI(); }
+  renderer.render(scene, camera);
+}
+
+function setupUI() {
+  setupCommonUI(v => flyTo(v));
+  onBtns('#seaOpts .opt', b => setSeason(b.dataset.sea === 'wet'));
+  onBtns('#pumpOpts .opt', b => setPump(+b.dataset.p));
+  onBtns('[data-sp]', b => { ST.speed = +b.dataset.sp; markOn('[data-sp]', x => x === b); });
+  $('btnPlay').addEventListener('click', () => setPlay(!ST.playing));
+  $('btnReset').addEventListener('click', reset);
+  $('btnStorm').addEventListener('click', storm);
+  $('btnCard').addEventListener('click', () => openPanel('station'));
+}
+
+async function init() {
+  setupRenderer({ fog: [520, 1900], minD: 30, maxD: 650 });
+  const [charts, mudT] = await Promise.all([fetch('data/facts_charts.json').then(r => r.json()), loadTex(TEX + 'brown_mud_02_diff.jpg', true), loadSky()]);
+  waterN = await loadTex(TEX + 'waternormals.jpg');
+  buildGround(mudT); buildFaces(); buildWater(); buildPonds(); buildWells(); buildHouses(); buildSeawall(); buildFlood(); buildRefLine(); buildLabels();
+  drawChart(charts.subsidence_pingtung_km2);
+  setupUI(); updateRiver(); updateFaces(); drawFront();
+  flyTo(new URLSearchParams(location.search).get('view') || 'overview', 0);
+  say('start'); doneLoading();
+  renderer.setAnimationLoop(frame);
+  window.__a1 = { scene, camera, controls, ST, SIM, OBJ, flyTo, step, storm, setPump, setSeason, setPlay, reset };   // 除錯用
+}
+init().catch(err => { console.error(err); document.querySelector('#loading div').textContent = '載入失敗，請重新整理（' + err.message + '）'; });
+</script>
+<script src="js/nav.js" data-narrow="1100" data-narrow-pos="center" defer></script>
+</body>
+</html>

@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>地下水銀行 3D 探索：從潮州到彰化</title>
+<style>
+  :root {
+    --bg: #eef4f7; --card: #ffffff; --ink: #0f2a3a; --sub: #4a6272; --line: #d5e2ea;
+    --accent: #0369a1; --go: #16a34a; --a: #0369a1; --b: #b45309;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink);
+    font-family: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif; }
+  header { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 14px 20px 8px; max-width: 1400px; margin: 0 auto; }
+  h1 { margin: 0; font-size: 26px; font-weight: 900; letter-spacing: 1px; }
+  .grade { font-weight: 800; font-size: 14px; padding: 4px 12px; border-radius: 999px; background: #e0f2fe; color: var(--accent); }
+  #fs { display: none; margin-left: auto; font-weight: 900; font-size: 15px; padding: 8px 14px; border-radius: 12px; background: var(--go); color: #fff; text-decoration: none; }
+  body.embed #fs { display: inline-block; }
+  main { padding: 0 20px 24px; max-width: 1400px; margin: 0 auto; }
+
+  .ask { display: flex; gap: 14px; align-items: center; background: linear-gradient(120deg, #0c4a6e, #0369a1); color: #fff; border-radius: 18px; padding: 16px 20px; }
+  .ask .q { flex: none; width: 52px; height: 52px; border-radius: 50%; background: #fbbf24; color: #0c4a6e; font-size: 32px; font-weight: 900; display: grid; place-items: center; }
+  .ask small { display: block; font-size: 14px; font-weight: 700; opacity: .85; margin-bottom: 2px; }
+  .ask b { font-size: 22px; font-weight: 900; line-height: 1.45; }
+
+  .fans { display: grid; grid-template-columns: 0.976fr 1.515fr; gap: 14px; margin: 14px auto 0; max-width: 1040px; }
+  .fan { border-radius: 18px; overflow: hidden; border: 1px solid var(--line); background: #0f2a3a; display: flex; flex-direction: column; }
+  .fan .pic { position: relative; }
+  .fan img { width: 100%; height: auto; display: block; }
+  .fan .cap { padding: 10px 16px 12px; color: #fff; flex: 1; }
+  .fan .cap b { font-size: 20px; font-weight: 900; }
+  .fan .cap span { display: block; font-size: 14.5px; font-weight: 600; margin-top: 2px; }
+  .fan .tag { position: absolute; left: 12px; top: 12px; padding: 4px 12px; border-radius: 999px; font-weight: 900; font-size: 14px; color: #fff; }
+  .fan .pt { position: absolute; padding: 2px 9px; border-radius: 8px; background: rgba(13,34,56,.6); color: #fff; font-size: 13px; font-weight: 800; transform: translate(-50%, -50%); white-space: nowrap; }
+
+  h2.part { margin: 22px 0 2px; font-size: 21px; font-weight: 900; display: flex; align-items: center; gap: 10px; }
+  h2.part i { width: 10px; height: 24px; border-radius: 4px; background: var(--c); }
+  .psub { font-size: 15px; color: var(--sub); margin: 0 0 10px 20px; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(215px, 1fr)); gap: 12px; }
+  .card { position: relative; background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 14px 16px 14px; text-decoration: none; color: inherit;
+    display: flex; flex-direction: column; gap: 6px; transition: transform .15s, box-shadow .15s; border-top: 6px solid var(--c); }
+  a.card:hover { transform: translateY(-3px); box-shadow: 0 8px 22px rgba(3,105,161,.18); }
+  .card .no { font-weight: 900; font-size: 14px; color: var(--c); }
+  .card h3 { margin: 0; font-size: 19px; font-weight: 900; line-height: 1.3; }
+  .card .place { font-size: 13px; color: var(--sub); font-weight: 700; }
+  .card p { margin: 0; font-size: 15px; line-height: 1.55; color: var(--sub); flex: 1; }
+  .card .go { align-self: flex-start; margin-top: 4px; font-weight: 900; color: #fff; background: var(--go); padding: 6px 12px; border-radius: 10px; font-size: 15px; }
+  .card.wip { opacity: .62; }
+  .card.wip .go { background: #94a3b8; }
+  .link { display: inline-block; margin-top: 14px; font-weight: 800; color: var(--accent); text-decoration: none; padding: 8px 14px; border-radius: 12px; background: #fff; border: 1px solid var(--line); }
+  footer { margin-top: 18px; font-size: 12px; color: #7b8d97; line-height: 1.6; }
+    @media (max-width: 760px) { .fans { grid-template-columns: 1fr; } h1 { font-size: 21px; } .ask b { font-size: 18px; } header { padding: 12px 16px 8px; } main { padding: 0 16px 20px; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>地下水銀行 3D 探索：從潮州到彰化</h1>
+  <span class="grade">六年級</span>
+  <a id="fs" href="./" target="_blank" rel="noopener">開新分頁全螢幕 ↗</a>
+</header>
+<main>
+  <div class="ask"><div class="q">?</div><div><small>這個單元要一起回答的問題</small><b id="question"></b></div></div>
+
+  <div class="fans">
+    <div class="fan"><div class="pic"><img src="assets/thumbs/pt.jpg" width="878" height="900" alt="林邊溪沖積扇空拍影像">
+      <span class="tag" style="background:var(--a)">屏東</span>
+      <span class="pt" style="left:70%;top:38%">大潮州人工湖（扇頂）</span><span class="pt" style="left:28%;top:84%">林邊、佳冬（扇尾）</span>
+      </div><div class="cap"><b>林邊溪沖積扇</b><span>大潮州人工湖在扇頂，把雨季的溪水存進地下</span></div></div>
+    <div class="fan"><div class="pic"><img src="assets/thumbs/ch.jpg" width="900" height="594" alt="濁水溪沖積扇彰化側空拍影像">
+      <span class="tag" style="background:var(--b)">彰化</span>
+      <span class="pt" style="left:84%;top:81%">二水（扇頂）</span><span class="pt" style="left:76%;top:19%">員林・圓林園</span><span class="pt" style="left:40%;top:39%">二林・萬興滯洪池</span><span class="pt" style="left:56%;top:65%">溪州</span>
+      </div><div class="cap"><b>濁水溪沖積扇（彰化這一側）</b><span>我們的家鄉也在沖積扇上，也有滯洪池</span></div></div>
+  </div>
+
+  <div id="parts"></div>
+  <a class="link" href="files/worksheet_student.pdf" target="_blank" rel="noopener" style="margin-right:8px">學習單（學生版 PDF，A4 列印）↗</a>
+  <a class="link" href="https://ittforeducation.github.io/babao3d/" target="_blank" rel="noopener">延伸：八堡圳 3D 實景教具 ↗</a>
+  <footer>
+    正射影像：國土測繪中心（政府資料開放授權）；地形：內政部 20 公尺網格數值地形模型（政府資料開放授權）；圖資：© OpenStreetMap 貢獻者（ODbL）；各站另附資料出處。
+  </footer>
+</main>
+<script>
+(async () => {
+  // 在 Google Sites 的嵌入框裡時，顯示「開新分頁全螢幕」（?embed=1 可在本機模擬）
+  let inFrame = false; try { inFrame = window.self !== window.top; } catch (e) { inFrame = true; }
+  if (inFrame || new URLSearchParams(location.search).get('embed') === '1') document.body.classList.add('embed');
+  document.getElementById('fs').href = location.pathname;
+
+  const U = await fetch('data/units.json', { cache: 'no-cache' }).then(r => r.json());
+  document.getElementById('question').textContent = U.question;
+  const box = document.getElementById('parts');
+  for (const [pk, part] of Object.entries(U.parts)) {
+    const color = pk === 'A' ? 'var(--a)' : 'var(--b)';
+    const h = document.createElement('h2'); h.className = 'part'; h.style.setProperty('--c', color); h.innerHTML = '<i></i>'; h.append(part.name);
+    const s = document.createElement('p'); s.className = 'psub'; s.textContent = part.sub;
+    const g = document.createElement('div'); g.className = 'cards';
+    for (const id of U.order) {
+      const p = U.pages[id]; if (p.part !== pk) continue;
+      const c = document.createElement(p.ready ? 'a' : 'div'); c.className = 'card' + (p.ready ? '' : ' wip'); c.style.setProperty('--c', color);
+      if (p.ready) c.href = p.file;
+      const add = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; e.textContent = txt; c.appendChild(e); };
+      add('div', 'no', p.no); add('h3', '', p.name); add('div', 'place', '📍 ' + p.place); add('p', '', p.desc); add('span', 'go', p.ready ? '進入 →' : '製作中');
+      g.appendChild(c);
+    }
+    box.append(h, s, g);
+  }
+})();
+</script>
+</body>
+</html>
